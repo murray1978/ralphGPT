@@ -1,0 +1,7 @@
+; Training data, split over two file's T:rain and V:alidate
+T: How long till the sun rises? V:<question>How long till the sun rises?</question>
+T: Howmany p's in apple? V:<question>Howmany p's in apple</question>
+T: Tommy: V:<character name="Tommy">
+T: The french toast was cold after an hour. V:<statement form=fact>The french toast was cold after an hour.</statement>
+T: <question>Howmany p's in apple?</question> V:<answer>there are 2 p's in apple.</answer>
+T: Consider you what services he has done for his country? V:<question>Consider you what services he has done for his country?</question>

@@ -1,0 +1,21 @@
+[PLAYER] who's swine is before me?
+[FARMER] That is mine sire, my wife.
+
+[FARMER] who dare awaken me?
+[PLAYER] I dare to awaken thee!
+
+[PLAYER] What way to the keep?
+[FARMHAND] Over the hill to the south.
+
+[GL] Where is the player?
+[NARRATOR] The player arrives at a [VILLAGE mcVillage], in the south of the country.
+
+[GL] Where is the player?
+[NARRATOR] The player is hiding in the [VILLAGE mcVillage], in the pub.
+
+[START CONVERSATION]
+
+
+[END CONVERSATION]
+
+
