@@ -34,9 +34,9 @@ torch.cuda.memory.set_per_process_memory_fraction(0.9)
 # hyperparameters
 batch_size = 48 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 2500
+max_iters = 5500
 eval_interval = 100
-min_val_loss = 1.389  # if validation loss below this value quit and save early
+min_val_loss = 1.289  # if validation loss below this value quit and save early
 loss_separation = 0.6  # difference between val loss and train loss
 
 # variable learning rate
