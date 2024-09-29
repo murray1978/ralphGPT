@@ -33,7 +33,7 @@ model_parameters = {
     "block_size": 0,
     "max_iters": 2500,
     "eval_iterations": 100,
-    "eval_interval": 10,
+    "eval_interval": 100,
     "min_val_loss": 1.389,  # if validation loss below this value quit and save early
     "loss_separation": 0.6,  # difference between val loss and train loss
     # variable learning rate
@@ -180,9 +180,9 @@ def generate_response(_model, _query, max_new_tokens=60):
     _model.eval()
     input_ids = torch.tensor(tokenizer.encode(_query), dtype=torch.long).unsqueeze(0).to(device)
     if model_parameters['with_memory']:
-        output_ids = _model.generate_compressed(input_ids, max_new_tokens=max_new_tokens)
+        output_ids = _model.generate_compressed(input_ids, max_new_tokens=max_new_tokens) # or here
     else:
-        output_ids = _model.generate(input_ids, max_new_tokens=max_new_tokens)
+        output_ids = _model.generate(input_ids, max_new_tokens=max_new_tokens) #here is an issue
     return tokenizer.decode(output_ids[0].tolist())
 
 import random
