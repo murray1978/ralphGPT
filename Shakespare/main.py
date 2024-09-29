@@ -31,7 +31,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppresses all logs except errors
 model_parameters = {
     "batch_size": 48,  # 64 how many independent sequences will we process in parallel? '48 works'
     "block_size": 0,
-    "max_iters": 5000,
+    "max_iters": 2500,
     "eval_iterations": 100,
     "eval_interval": 10,
     "min_val_loss": 1.389,  # if validation loss below this value quit and save early
@@ -279,6 +279,7 @@ def train(_scheduler, _optimizer, _data, _model):
 
 def main():
 
+    model_file = model_parameters['model_file']
     # define the three models
     # preProcessorModel = GPTLanguageModel(params=params)
     mainModel = GPTLanguageModel(params=params)
@@ -323,6 +324,16 @@ def main():
            _model = mainModel)
 
     # training works now what....? inferance after training.
+
+    print(f"Saving {model_file}")
+    # Save the model
+    torch.save(mainModel.state_dict(), model_file)
+
+        # Example queries
+    query = "[Q]: Who is Romeo?\n[A]:"
+    response = generate_response(mainModel, query)
+    print(response)
+
     pass
 
 
