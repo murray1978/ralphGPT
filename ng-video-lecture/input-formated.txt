@@ -58,14 +58,16 @@ speak this in hunger for bread, not in thirst for revenge.
 
 <character name="All">
 <statement form=>Against him first: he's a very dog to the commonalty.</statement>
-<character>
+</character>
 
 <charcter name="Second Citizen">
 <question>Consider you what services he has done for his country?</question>
+</character>
 
-First Citizen:
-Very well; and could be content to give him good
-report fort, but that he pays himself with being proud.
+<character name="First Citizen">
+<statement form=>Very well; and could be content to give him good
+report fort, but that he pays himself with being proud.</statement>
+</character>
 
 Second Citizen:
 Nay, but speak not maliciously.

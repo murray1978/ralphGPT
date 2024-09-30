@@ -277,6 +277,18 @@ def train(_scheduler, _optimizer, _data, _model):
         torch.cuda.empty_cache()
         gc.collect()
 
+def createDataset(_datafile, split=0.9):
+
+    with open(_datafile, 'r', encoding='utf-8') as f:
+        text = f.read()
+    
+    rawData = torch.tensor(tokenizer.encode(text), dtype=torch.long)
+    n = int(split*len(rawData)) # first 90% will be train, rest val
+    train_data = rawData[:n]
+    val_data = rawData[n:]
+
+    return train_data, val_data
+
 def main():
 
     model_file = model_parameters['model_file']
@@ -299,7 +311,7 @@ def main():
     optimizer = load_main_model(mainModel, model_parameters['model_file'])    
     mainModel.to(device)
 
-    mainModel = mainModel.to(device)
+    # mainModel = mainModel.to(device)
     # print the number of parameters in the model
     print(sum(p.numel() for p in mainModel.parameters())/1e6, 'M parameters')
 
@@ -308,29 +320,21 @@ def main():
     
     datafile = model_parameters['data_file']
 
-    with open(datafile, 'r', encoding='utf-8') as f:
-        text = f.read()
-    
-    rawData = torch.tensor(tokenizer.encode(text), dtype=torch.long)
-    n = int(0.9*len(rawData)) # first 90% will be train, rest val
-    train_data = rawData[:n]
-    val_data = rawData[n:]
+    dataset = createDataset(datafile)
 
-    data = train_data, val_data
-
-    train(_scheduler=scheduler,
-           _optimizer=optimizer, 
-           _data = data, 
-           _model = mainModel)
+    # train(_scheduler=scheduler,
+    #       _optimizer=optimizer, 
+    #       _data = dataset, 
+    #       _model = mainModel)
 
     # training works now what....? inferance after training.
 
     print(f"Saving {model_file}")
     # Save the model
-    torch.save(mainModel.state_dict(), model_file)
+    # torch.save(mainModel.state_dict(), model_file)
 
         # Example queries
-    query = "[Q]: Who is Romeo?\n[A]:"
+    query = "[Q]: Who is Romeo?\n"
     response = generate_response(mainModel, query)
     print(response)
 

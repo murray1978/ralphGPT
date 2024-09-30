@@ -67,11 +67,12 @@ class MultiHeadAttention(nn.Module):
 class FeedFoward(nn.Module):
     """ a simple linear layer followed by a non-linearity """
 
-    def __init__(self, _n_embd, params):
+    def __init__(self, _n_embd, params, negative_slope=0.01):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(_n_embd, 4 * _n_embd),
-            nn.ReLU(),
+            # nn.ReLU(),
+            nn.LeakyReLU(negative_slope=negative_slope), # helps eliminate dead neurons
             nn.Linear(4 * _n_embd, _n_embd),
             nn.Dropout(params.dropout),
         )
@@ -226,40 +227,40 @@ class GPTLanguageModel(nn.Module):
         torch.cuda.empty_cache()
         return logits, loss
 
-def generate(self, idx, max_new_tokens):
-    self.secondary_memory = None
-    for _ in range(max_new_tokens):
-        idx_cond = idx[:, -self.block_size:]
-        logits, loss = self(idx_cond)
-        logits = logits[:, -1, :]  # (B, C)
-        probs = F.softmax(logits, dim=-1)  # (B, C)
-        idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
-        idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
-    return idx
-
-def generate_compressed(self, idx, max_new_tokens):
-    self.secondary_memory = None
-    for _ in range(max_new_tokens):
-        idx_cond = idx[:, -self.block_size:]
-        logits, loss = self(idx_cond)
-        logits = logits[:, -1, :]  # (B, C)
-        probs = F.softmax(logits, dim=-1)  # (B, C)
-        idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
-        idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
-
-        # Update the secondary memory with new activations
-        with torch.no_grad():
-            # Recompute the activations for the entire sequence
-            tok_emb = self.token_embedding_table(idx)  # (B,T,C)
-            pos_emb = self.position_embedding_table(torch.arange(idx.shape[1], device=idx.device))  # (T,C)
-            x = tok_emb + pos_emb  # (B,T,C)
-            x = self.blocks(x)  # (B,T,C)
-            compressed_activations = self.compress_activations(x[:, :idx.shape[1] - self.compression_rate, :])
-
-            if self.secondary_memory is None:
-                self.secondary_memory = compressed_activations
-            else:
-                self.secondary_memory = torch.cat((self.secondary_memory, compressed_activations), dim=1)
-
+    def generate(self, idx, max_new_tokens):
+        self.secondary_memory = None
+        for _ in range(max_new_tokens):
+            idx_cond = idx[:, -self.block_size:]
+            logits, loss = self(idx_cond)
+            logits = logits[:, -1, :]  # (B, C)
+            probs = F.softmax(logits, dim=-1)  # (B, C)
+            idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
+            idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
         return idx
+
+    def generate_compressed(self, idx, max_new_tokens):
+        self.secondary_memory = None
+        for _ in range(max_new_tokens):
+            idx_cond = idx[:, -self.block_size:]
+            logits, loss = self(idx_cond)
+            logits = logits[:, -1, :]  # (B, C)
+            probs = F.softmax(logits, dim=-1)  # (B, C)
+            idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
+            idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
+
+            # Update the secondary memory with new activations
+            with torch.no_grad():
+                # Recompute the activations for the entire sequence
+                tok_emb = self.token_embedding_table(idx)  # (B,T,C)
+                pos_emb = self.position_embedding_table(torch.arange(idx.shape[1], device=idx.device))  # (T,C)
+                x = tok_emb + pos_emb  # (B,T,C)
+                x = self.blocks(x)  # (B,T,C)
+                compressed_activations = self.compress_activations(x[:, :idx.shape[1] - self.compression_rate, :])
+
+                if self.secondary_memory is None:
+                    self.secondary_memory = compressed_activations
+                else:
+                    self.secondary_memory = torch.cat((self.secondary_memory, compressed_activations), dim=1)
+
+            return idx
 

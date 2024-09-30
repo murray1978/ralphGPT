@@ -34,7 +34,7 @@ torch.cuda.memory.set_per_process_memory_fraction(0.9)
 # hyperparameters
 batch_size = 48 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 5500
+max_iters = 500
 eval_interval = 100
 min_val_loss = 1.289  # if validation loss below this value quit and save early
 loss_separation = 0.6  # difference between val loss and train loss
@@ -238,11 +238,11 @@ class MultiHeadAttention(nn.Module):
 class FeedFoward(nn.Module):
     """ a simple linear layer followed by a non-linearity """
 
-    def __init__(self, n_embd):
+    def __init__(self, n_embd, negative_slope=0.01):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4 * n_embd),
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=negative_slope),
             nn.Linear(4 * n_embd, n_embd),
             nn.Dropout(dropout),
         )
@@ -596,9 +596,10 @@ if fine_tune and not for_chat:
 elif for_chat:
     user_input = ""
     while True:
-        _input = input_with_timeout(":", timeout=10)  # Timeout after 5 seconds
+        _input = input(":")
+        # _input = input_with_timeout(":", timeout=10)  # Timeout after 5 seconds
         if _input:
-            user_input += _input
+            user_input += "<character name=user><question>" + _input + "</question></character>"
         else:
             user_input += generate_random_chars() + "?"
         response = generate_response(model, user_input, max_new_tokens=256)
