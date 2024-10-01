@@ -1,6 +1,7 @@
-# Compressive Transformer, from the paper COMPRESSIVE TRANSFORMERS FOR LONG-RANGE
-# SEQUENCE MODELLING
+# Compressive Transformer, from the paper COMPRESSIVE TRANSFORMERS FOR LONG-RANGE SEQUENCE MODELLING,
 # adapted from comp_gpt.py from gpt_QA.py
+# using this as a learing and testbed GPT.
+# elapsed time incorrect, it's more like time accumulation.
 import os
 import sys
 
@@ -34,10 +35,10 @@ torch.cuda.memory.set_per_process_memory_fraction(0.9)
 # hyperparameters
 batch_size = 48 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 500
+max_iters = 600
 eval_interval = 100
 min_val_loss = 1.289  # if validation loss below this value quit and save early
-loss_separation = 0.6  # difference between val loss and train loss
+loss_separation = 0.5  # difference between val loss and train loss
 
 # variable learning rate
 learning_rate_fine = 1e-5
@@ -69,9 +70,10 @@ labels = {
 
 # Data files
 data_folder = "dataset"
-datafile = "input-formated.txt"
+datafile = "input-formatedFull.txt"
 model_folder = "models"
-model_file = "gptnv_normal21.pth"
+model_file = "gptnv_normal21a.pth"
+save_file = "gptnv_normal21a.pth"
 preprocessor_model = "preprocessor_model.pth"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -82,8 +84,8 @@ def signal_handler(sig, frame):
     if not for_chat:
         print('Ctrl-C detected, Saving model')
         if model is not None:
-            torch.save(model.state_dict(), model_file)
-            print(f'Model saved as {model_file}')
+            torch.save(model.state_dict(), save_file)
+            print(f'Model saved as {save_file}')
     sys.exit(0)
 
 
@@ -143,10 +145,10 @@ torch.manual_seed(1337)
 
 # wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
 with open(datafile, 'r', encoding='utf-8') as f:
-    text = f.read()
+    text = f.read()                          # change to the tokenizer.
 
 # Additional Characters not found in the text
-additional_chars = r"<>[]{}123456780\?"
+additional_chars = r"<>[]{}123456780\?-+=#$" #
 
 # here are all the unique characters that occur in this text
 chars = sorted(list(set(text) | set(additional_chars)))
@@ -572,9 +574,9 @@ if interativePlot:
     plt.show()
 
 if not for_chat:
-    print(f"Saving {model_file}")
+    print(f"Saving {save_file}")
     # Save the model
-    torch.save(model.state_dict(), model_file)
+    torch.save(model.state_dict(), save_file)
 
 if show_graphs:
     import matplotlib.pyplot as plt

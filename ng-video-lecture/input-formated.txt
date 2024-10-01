@@ -57,7 +57,7 @@ speak this in hunger for bread, not in thirst for revenge.
 </character>
 
 <character name="All">
-<statement form=>Against him first: he's a very dog to the commonalty.</statement>
+<statement form="reply">Against him first: he's a very dog to the commonalty.</statement>
 </character>
 
 <charcter name="Second Citizen">
@@ -65,15 +65,16 @@ speak this in hunger for bread, not in thirst for revenge.
 </character>
 
 <character name="First Citizen">
-<statement form=>Very well; and could be content to give him good
+<statement form="reply">Very well; and could be content to give him good
 report fort, but that he pays himself with being proud.</statement>
 </character>
 
-Second Citizen:
-Nay, but speak not maliciously.
+<character name="Second Citizen">
+<stateme form=>Nay, but speak not maliciously.</statement>
+</character>
 
-First Citizen:
-I say unto you, what he hath done famously, he did
+<character name="First Citizen">
+<statement I say unto you, what he hath done famously, he did
 it to that end: though soft-conscienced men can be
 content to say it was for his country he did it to
 please his mother and to be partly proud; which he

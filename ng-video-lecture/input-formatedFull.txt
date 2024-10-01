@@ -1,0 +1,1961 @@
+<conversation>
+<character name="First Citizen">
+<statement>Before we proceed any further, hear me speak.</statement>
+</character>
+
+<character name="All">
+<reply>Speak, speak.</reply>
+</character>
+
+<character name="First Citizen">
+<question>You are all resolved rather to die than to famish?</question>
+</character>
+
+<character name="All">
+<reply>Resolved. resolved.</reply>
+</character>
+
+
+<character name="First Citizen">
+<statement>First, you know Caius Marcius is chief enemy to the people.</statement>
+</character>
+
+<charcater name="All">
+<reply>We know't, we know't.</reply>
+</character>
+
+<character name="First Citizen">
+<statement>Let us kill him, and we'll have corn at our own price.</statement>
+<question>Is't a verdict?</question>
+</character>
+
+<character name="All">
+<reply>No more talking on't; let it be done: away, away!</reply>
+</character>
+
+<character name="Second Citizen">
+<statement>One word, good citizens.</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="monologue">
+We are accounted poor citizens, the patricians good.
+What authority surfeits on would relieve us: if they
+would yield us but the superfluity, while it were
+wholesome, we might guess they relieved us humanely;
+but they think we are too dear: the leanness that
+afflicts us, the object of our misery, is as an
+inventory to particularise their abundance; our
+sufferance is a gain to them. Let us revenge this with
+our pikes, ere we become rakes: for the gods know I
+speak this in hunger for bread, not in thirst for revenge.
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+Would you proceed especially against Caius Marcius?
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+Against him first: he's a very dog to the commonalty.
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+Consider you what services he has done for his country?
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+Very well; and could be content to give him good
+report for't, but that he pays himself with being proud.
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+Nay, but speak not maliciously.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+I say unto you, what he hath done famously, he did it
+to that end: though soft-conscienced men can be content
+to say it was for his country he did it to please his
+mother and to be partly proud; which he is, even to the
+altitude of his virtue.
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+What he cannot help in his nature, you account a
+vice in him. You must in no way say he is covetous.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+If I must not, I need not be barren of accusations;
+he hath faults, with surplus, to tire in repetition.
+[Shouts within]
+What shouts are these? The other side o' the city is
+risen: why stay we prating here? To the Capitol!
+</statement>
+</character>
+
+<character name="All Citizens">
+<statement form="dialogue">
+Come, come.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+Soft! who comes here?
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+Worthy Menenius Agrippa; one that hath always loved the
+people.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+He's one honest enough; would all the rest were so!
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+What work's, my countrymen, in hand? where go you
+With bats and clubs? The matter? speak, I pray you.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+Our business is not unknown to the senate; they have
+had inkling, this fortnight, what we intend to do,
+which now we'll show 'em in deeds. They say poor
+suitors have strong breaths: they shall know we have
+strong arms too.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Why, masters, my good friends, mine honest neighbours,
+Will you undo yourselves?
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+We cannot, sir, we are undone already.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+I tell you, friends, most charitable care
+Have the patricians of you. For your wants,
+Your suffering in this dearth, you may as well
+Strike at the heaven with your staves as lift them
+Against the Roman state, whose course will on
+The way it takes, cracking ten thousand curbs
+Of more strong link asunder than can ever
+Appear in your impediment. For the dearth,
+The gods, not the patricians, make it; and
+Your knees to them, not arms, must help. Alack,
+You are transported by calamity
+Thither where more attends you; and you slander
+The helms o' the state, who care for you like fathers,
+When you curse them as enemies.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+Care for us! True, indeed! They ne'er cared for us yet.
+Suffer us to famish, and their store-houses crammed with
+grain; make edicts for usury, to support usurers;
+repeal daily any wholesome act established against the
+rich, and provide more piercing statutes daily, to
+chain up and restrain the poor. If the wars eat us not
+up, they will; and there's all the love they bear us.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Either you must
+Confess yourselves wondrous malicious,
+Or be accused of folly. I shall tell you
+A pretty tale; it may be you have heard it;
+But, since it serves my purpose, I will venture
+To stale't a little more.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+Well, I'll hear it, sir: yet you must not think to
+fob off our disgrace with a tale: but, an't please
+you, deliver.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+There was a time when all the body's members
+Rebell'd against the belly, thus accused it:
+That only like a gulf it did remain
+I' the midst o' the body, idle and unactive,
+Still cupboarding the viand, never bearing
+Like labour with the rest, where the other instruments
+Did see and hear, devise, instruct, walk, feel,
+And, mutually participate, did minister
+Unto the appetite and affection common
+Of the whole body. The belly answer'd--
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+Well, sir, what answer made the belly?
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Sir, I shall tell you. With a kind of smile,
+Which ne'er came from the lungs, but even thus--
+For, look you, I may make the belly smile
+As well as speak--it tauntingly replied
+To the discontented members, the mutinous parts
+That envied his receipt; even so most fitly
+As you malign our senators for that
+They are not such as you.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+Your belly's answer? What!
+The kingly-crowned head, the vigilant eye,
+The counsellor heart, the arm our soldier,
+Our steed the leg, the tongue our trumpeter,
+With other muniments and petty helps
+In this our fabric, if that they--
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+What then?--
+'Fore me, this fellow speaks! What then? what then?
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+Should by the cormorant belly be restrain'd,
+Who is the sink o' the body,--
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Well, what then?
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+The former agents, if they did complain,
+What could the belly answer?
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+I will tell you;
+If you'll bestow a small--of what you have little--
+Patience awhile, you'll hear the belly's answer.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+You're long about it.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Note me this, good friend;
+Your most grave belly was deliberate,
+Not rash like his accusers, and thus answer'd:
+'True is it, my incorporate friends,' quoth he,
+'That I receive the general food at first,
+Which you do live upon; and fit it is,
+Because I am the store-house and the shop
+Of the whole body: but, if you do remember,
+I send it through the rivers of your blood,
+Even to the court, the heart, to the seat o' the brain;
+And, through the cranks and offices of man,
+The strongest nerves and small inferior veins
+From me receive that natural competency
+Whereby they live: and though that all at once,
+You, my good friends,'--this says the belly, mark me,--
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+Ay, sir; well, well.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+'Though all at once cannot
+See what I do deliver out to each,
+Yet I can make my audit up, that all
+From me do back receive the flour of all,
+And leave me but the bran.' What say you to't?
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+It was an answer: how apply you this?
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+The senators of Rome are this good belly,
+And you the mutinous members: for examine
+Their counsels and their cares; digest things rightly
+Touching the weal o' the common, you shall find
+No public benefit which you receive
+But it proceeds or comes from them to you
+And no way from yourselves. What do you think,
+You, the great toe of this assembly?
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+I the great toe! why the great toe?
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+For that, being one o' the lowest, basest, poorest,
+Of this most wise rebellion, thou go'st foremost:
+Thou rascal, that art worst in blood to run,
+Lead'st first to win some vantage.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+But make you ready your stiff bats and clubs:
+Rome and her rats are at the point of battle;
+The one side must have bale.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Hail, noble Marcius!
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+Thanks. What's the matter, you dissentious rogues,
+That, rubbing the poor itch of your opinion,
+Make yourselves scabs?
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+We have ever your good word.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+He that will give good words to thee will flatter
+Beneath abhorring. What would you have, you curs,
+That like nor peace nor war? the one affrights you,
+The other makes you proud. He that trusts to you,
+Where he should find you lions, finds you hares;
+Where foxes, geese: you are no surer, no,
+Than is the coal of fire upon the ice,
+Or hailstone in the sun. Your virtue is
+To make him worthy whose offence subdues him
+And curse that justice did it. Who deserves greatness
+Deserves your hate; and your affections are
+A sick man's appetite, who desires most that
+Which would increase his evil. He that depends
+Upon your favours swims with fins of lead
+And hews down oaks with rushes. Hang ye! Trust ye?
+With every minute you do change a mind
+And call him noble that was now your hate,
+Him vile that was your garland. What's the matter,
+That in these several places of the city
+You cry against the noble senate, who,
+Under the gods, keep you in awe, which else
+Would feed on one another? What's their seeking?
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+For corn at their own rates; whereof, they say,
+The city is well stored.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+Hang 'em! They say!
+They'll sit by the fire, and presume to know
+What's done i' the Capitol; who's like to rise,
+Who thrives and who declines; side factions and give out
+Conjectural marriages; making parties strong
+And feebling such as stand not in their liking
+Below their cobbled shoes. They say there's grain enough!
+Would the nobility lay aside their ruth,
+And let me use my sword, I'd make a quarry
+With thousands of these quarter'd slaves, as high
+As I could pick my lance.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Nay, these are almost thoroughly persuaded;
+For though abundantly they lack discretion,
+Yet are they passing cowardly. But, I beseech you,
+What says the other troop?
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+They are dissolved: hang 'em!
+They said they were an-hungry; sigh'd forth proverbs,
+That hunger broke stone walls, that dogs must eat,
+That meat was made for mouths, that the gods sent not
+Corn for the rich men only: with these shreds
+They vented their complainings; which being answer'd,
+And a petition granted them, a strange one--
+To break the heart of generosity
+And make bold power look pale--they threw their caps
+As they would hang them on the horns o' the moon,
+Shouting their emulation.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+What is granted them?
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+Five tribunes to defend their vulgar wisdoms,
+Of their own choice: one's Junius Brutus,
+Sicinius Velutus, and I know not--'Sdeath!
+The rabble should have first unroof'd the city,
+Ere so prevail'd with me: it will in time
+Win upon power and throw forth greater themes
+For insurrection's arguing.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+This is strange.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+Go, get you home, you fragments!
+</statement>
+</character>
+
+<stage_direction>
+Enter a Messenger, hastily
+</stage_direction>
+
+<character name="Messenger">
+<statement form="dialogue">
+Where's Caius Marcius?
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+Here: what's the matter?
+</statement>
+</character>
+
+<character name="Messenger">
+<statement form="dialogue">
+The news is, sir, the Volsces are in arms.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+I am glad on't: then we shall ha' means to vent
+Our musty superfluity. See, our best elders.
+</statement>
+</character>
+
+<stage_direction>
+Enter COMINIUS, TITUS LARTIUS, and other Senators; JUNIUS BRUTUS and SICINIUS VELUTUS
+</stage_direction>
+
+<character name="First Senator">
+<statement form="dialogue">
+Marcius, 'tis true that you have lately told us;
+The Volsces are in arms.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+They have a leader,
+Tullus Aufidius, that will put you to't.
+I sin in envying his nobility,
+And were I any thing but what I am,
+I would wish me only he.
+</statement>
+</character>
+
+<character name="Cominius">
+<statement form="dialogue">
+You have fought together.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+Were half to half the world by the ears and he
+Upon my party, I'ld revolt, to make
+Only my wars with him: he is a lion
+That I am proud to hunt.
+</statement>
+</character>
+
+<character name="First Senator">
+<statement form="dialogue">
+Then, worthy Marcius,
+Attend upon Cominius to these wars.
+</statement>
+</character>
+
+<character name="Cominius">
+<statement form="dialogue">
+It is your former promise.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+Sir, it is;
+And I am constant. Titus Lartius, thou
+Shalt see me once more strike at Tullus' face.
+What, art thou stiff? stand'st out?
+</statement>
+</character>
+
+<character name="Titus Lartius">
+<statement form="dialogue">
+No, Caius Marcius;
+I'll lean upon one crutch and fight with t'other,
+Ere stay behind this business.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+O, true bred!
+</statement>
+</character>
+
+<character name="First Senator">
+<statement form="dialogue">
+Your company to the Capitol; where, I know,
+Our greatest friends attend us.
+</statement>
+</character>
+
+<character name="Titus Lartius">
+<statement form="dialogue">
+Lead you on.
+Follow Cominius; we must follow you;
+Right worthy you priority.
+</statement>
+</character>
+
+<character name="Cominius">
+<statement form="dialogue">
+Noble Marcius!
+</statement>
+</character>
+
+<character name="First Senator">
+<statement form="dialogue">
+[To the Citizens] Hence to your homes; be gone!
+</statement>
+</character>
+
+<stage_direction>
+They all shout and throw up their caps
+</stage_direction>
+
+<character name="Marcius">
+<statement form="dialogue">
+Nay, let them follow:
+The Volsces have much corn; take these rats thither
+To gnaw their garners. Worshipful mutineers,
+Your valour puts well forth: pray, follow.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt all but SICINIUS and BRUTUS]
+</stage_direction>
+
+<character name="Sicinius Velutus">
+<statement form="dialogue">
+Was ever man so proud as is this Marcius?
+</statement>
+</character>
+
+<character name="Junius Brutus">
+<statement form="dialogue">
+He has no equal.
+</statement>
+</character>
+
+<character name="Sicinius Velutus">
+<statement form="dialogue">
+When we were chosen tribunes for the people,—
+</statement>
+</character>
+
+<character name="Junius Brutus">
+<statement form="dialogue">
+Mark'd you his lip and eyes?
+</statement>
+</character>
+
+<character name="Sicinius Velutus">
+<statement form="dialogue">
+Nay, but his taunts.
+</statement>
+</character>
+
+<character name="Junius Brutus">
+<statement form="dialogue">
+Being moved, he will not spare to gird the gods.
+</statement>
+</character>
+
+<character name="Sicinius Velutus">
+<statement form="dialogue">
+Bemock the modest moon.
+</statement>
+</character>
+
+<character name="Junius Brutus">
+<statement form="dialogue">
+The present wars devour him: he is grown
+Too proud to be so valiant.
+</statement>
+</character>
+
+<character name="Sicinius Velutus">
+<statement form="dialogue">
+Such a nature,
+Tickled with good success, disdains the shadow
+Which he treads on at noon: but I do wonder
+His insolence can brook to be commanded
+Under Cominius.
+</statement>
+</character>
+
+<character name="Junius Brutus">
+<statement form="dialogue">
+Fame, at the which he aims,
+In whom already he's well graced, can not
+Better be held nor more attain'd than by
+A place below the first; for what miscarries
+Shall be the general's fault, though he perform
+To the utmost of a man, and giddy censure
+Will then cry out of Marcius 'O, if he
+Had borne the business!'
+</statement>
+</character>
+
+<character name="Sicinius Velutus">
+<statement form="dialogue">
+Besides, if things go well,
+Opinion that so sticks on Marcius shall
+Of his demerits rob Cominius.
+</statement>
+</character>
+
+<character name="Junius Brutus">
+<statement form="dialogue">
+Come:
+Half all Cominius' honours are to Marcius,
+Though Marcius earn'd them not, and all his faults
+To Marcius shall be honours, though indeed
+In aught he merit not.
+</statement>
+</character>
+
+<character name="Sicinius Velutus">
+<statement form="dialogue">
+Let's hence, and hear
+How the dispatch is made, and in what fashion,
+More than in singularity, he goes
+Upon this present action.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt]
+</stage_direction>
+
+<stage_direction>
+[Scene II. Corioli. The Senate-house.]
+</stage_direction>
+
+<stage_direction>
+Enter TULLUS AUFIDIUS with Senators of Corioli
+</stage_direction>
+
+<character name="First Senator">
+<statement form="dialogue">
+So, your opinion is, Aufidius,
+That they of Rome are enter'd in our counsels
+And know how we proceed.
+</statement>
+</character>
+
+<character name="Aufidius">
+<statement form="dialogue">
+Is it not yours?
+What ever have been thought on in this state,
+That could be brought to bodily act ere Rome
+Had circumvention? 'Tis not four days gone
+Since I heard thence; these are the words: I think
+I have the letter here; yes, here it is.
+[Reads]
+'They have press'd a power, but it is not known
+Whether for east or west: the dearth is great;
+The people mutinous: and it is rumour'd,
+Cominius, Marcius your old enemy,
+Who is of Rome worse hated than of you,
+And Titus Lartius, a most valiant Roman,
+These three lead on this preparation
+Whither 'tis bent: most likely 'tis for you:
+Consider of it.'
+</statement>
+</character>
+
+<character name="First Senator">
+<statement form="dialogue">
+Our army's in the field:
+We never yet made doubt but Rome was ready
+To answer us.
+</statement>
+</character>
+
+<character name="Aufidius">
+<statement form="dialogue">
+Nor did you think it folly
+To keep your great pretences veil'd till when
+They needs must show themselves; which in the hatching,
+It seem'd, appear'd to Rome. By the discovery.
+We shall be shorten'd in our aim, which was
+To take in many towns ere almost Rome
+Should know we were afoot.
+</statement>
+</character>
+
+<stage_direction>
+[Second Senator enters with a Messenger]
+</stage_direction>
+
+<character name="Second Senator">
+<statement form="dialogue">
+Noble Aufidius,
+Take your commission; hie you to your bands:
+Let us alone to guard Corioli;
+If they set down before 's, for the remove
+Bring up your army; but, I think, you'll find
+They've not prepared for us.
+</statement>
+</character>
+
+<stage_direction>
+[Aufidius exits with his troops]
+</stage_direction>
+
+<stage_direction>
+[Scene III. Rome. MARCIUS' house.]
+</stage_direction>
+
+<stage_direction>
+Enter VOLUMNIA and VIRGILIA: They set them down on two low stools, and sew
+</stage_direction>
+
+<character name="Volumnia">
+<statement form="dialogue">
+I pray you, daughter, sing; or express yourself
+in a more comfortable sort: if my son were my
+husband, I should freelier rejoice in that absence
+wherein he won honour than in the embracements of
+his bed where he would show most love. When yet he
+was but tender-bodied and the only son of my womb,
+when youth with comeliness pluck'd all gaze his way,
+when for a day of kings' entreaties a mother should
+not sell him an hour from her beholding, I,
+considering how honour would become such a person,
+that it was no better than picture-like to hang by
+the wall, if renown made it not stir, was pleased
+to let him seek danger where he was like to find
+fame. To a cruel war I sent him; from whence he
+return'd, his brows bound with oak. I tell thee,
+daughter, I sprang not more in joy at first hearing
+he was a man-child than now in first seeing he had
+proved himself a man.
+</statement>
+</character>
+
+<character name="Virgilia">
+<statement form="dialogue">
+But had he died in the business, madam; how then?
+</statement>
+</character>
+
+<character name="Volumnia">
+<statement form="dialogue">
+Then his good report should have been my son; I
+therein would have found issue. Hear me profess
+sincerely: had I a dozen sons, each in my love
+alike and none less dear than thine and my good
+Marcius, I had rather had eleven die nobly for their
+country than one voluptuously surfeit out of action.
+</statement>
+</character>
+
+<stage_direction>
+Enter a Gentlewoman
+</stage_direction>
+
+<character name="Gentlewoman">
+<statement form="dialogue">
+Madam, the Lady Valeria is come to visit you.
+</statement>
+</character>
+
+<character name="Virgilia">
+<statement form="dialogue">
+Beseech you, give me leave to retire myself.
+</statement>
+</character>
+
+<character name="Volumnia">
+<statement form="dialogue">
+Indeed, you shall not.
+Methinks I hear hither your husband's drum,
+See him pluck Aufidius down by the hair;
+As children from a bear, the Volsces shunning him:
+Methinks I see him stamp thus, and call thus:
+'Come on, you cowards! you were got in fear,
+Though you were born in Rome:' his bloody brow
+With his mail'd hand then wiping, forth he goes,
+Like to a harvest-man that's task'd to mow
+Or all or lose his hire.
+</statement>
+</character>
+
+<character name="Virgilia">
+<statement form="dialogue">
+His bloody brow! O Jupiter, no blood!
+</statement>
+</character>
+
+<stage_direction>
+Enter VALERIA, with an Usher and Gentlewoman
+</stage_direction>
+
+<character name="Valeria">
+<statement form="dialogue">
+How now, my as fair as noble ladies, and the moon,
+were she earthly, no nobler! whither do you follow
+your eyes so fast?
+</statement>
+</character>
+
+<character name="Volumnia">
+<statement form="dialogue">
+Honourable Valeria, not in a way of
+recreation, but a cause of action; to Valeria:
+we shall hear the drums of Marcius. You know where
+your own servants are at, and what to ask of your
+servants, though without actually telling them the
+place or time of engagement.
+</statement>
+</character>
+
+<character name="Valeria">
+<statement form="dialogue">
+Indeed, we shall. Let us be quick with our hands,
+though. The cause of our service and devotion shall
+not delay our determination.
+</statement>
+</character>
+
+<character name="Volumnia">
+<statement form="dialogue">
+Yes, and we shall see Marcius return, much like a
+lion brought back from the hunt. His victory will
+satisfy even the highest hopes of Rome.
+</statement>
+</character>
+
+<character name="Valeria">
+<statement form="dialogue">
+I do believe it. Shall we move to where we might
+hear the news more clearly?
+</statement>
+</character>
+
+<character name="Volumnia">
+<statement form="dialogue">
+Let us.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt all the ladies]
+</stage_direction>
+
+<stage_direction>
+[Scene IV. Before Corioli.]
+</stage_direction>
+
+<stage_direction>
+Enter, with drum and colours, MARCIUS, TITUS LARTIUS, Captains and Soldiers. To them a Messenger
+</stage_direction>
+
+<character name="Marcius">
+<statement form="dialogue">
+Yonder comes news: a wager they have met.
+</statement>
+</character>
+
+<character name="Lartius">
+<statement form="dialogue">
+My lord, your right hand will never stay behind;
+You shall not need to make any longer the stops
+Than in the midst of our artillery.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+Not only thou but all the world shall know
+Thy valour and thy true love towards Rome.
+I pray thee, good Lartius, take my hand;
+And with it welcome also to our side
+The people who watch from the walls of Corioli.
+</statement>
+</character>
+
+<stage_direction>
+[Trumpets sound within]
+</stage_direction>
+
+<character name="Marcius">
+<statement form="dialogue">
+Hark! What noise is this?
+Shall I have action of it, or shall I
+look on?
+</statement>
+</character>
+
+<character name="Lartius">
+<statement form="dialogue">
+The noise is not of those who fight, my lord.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+Let me see what it is:
+Go we to them who have the quarrel.
+</statement>
+</character>
+
+<stage_direction>
+[They enter Corioli]
+</stage_direction>
+
+<stage_direction>
+[Scene V. The streets of Corioli.]
+</stage_direction>
+
+<stage_direction>
+Enter MARCIUS and TITUS LARTIUS with Soldiers, as in combat. MARCIUS gives chase to enemies and exits.
+</stage_direction>
+
+<character name="Marcius">
+<statement form="dialogue">
+Make you a sword of me? That is against my will.
+Alone I shall face them!
+</statement>
+</character>
+
+<stage_direction>
+[MARCIUS exits, pursued by the enemy]
+</stage_direction>
+
+<stage_direction>
+Enter LARTIUS
+</stage_direction>
+
+<character name="Lartius">
+<statement form="dialogue">
+Though far outnumber'd, thus shall Marcius bear
+himself in battle.
+</statement>
+</character>
+
+<stage_direction>
+[The enemy retreats, and MARCIUS returns, bleeding.]
+</stage_direction>
+
+<character name="Marcius">
+<statement form="dialogue">
+O, let me not fail now, when our cause needs most
+support. It is nothing to bleed for Rome; it is
+only honour!
+</statement>
+</character>
+
+<character name="Lartius">
+<statement form="dialogue">
+We have won the battle, and the city is ours.
+</statement>
+</character>
+
+<stage_direction>
+[The trumpets sound. Exeunt all.]
+</stage_direction>
+
+<stage_direction>
+[Scene VI. Rome. A public place.]
+</stage_direction>
+
+<stage_direction>
+Enter MENENIUS, with SICINIUS and BRUTUS
+</stage_direction>
+
+<character name="Menenius">
+<statement form="dialogue">
+The augurer tells me we shall have news tonight
+Of Marcius' battle.
+</statement>
+</character>
+
+<character name="Sicinius">
+<statement form="dialogue">
+Good or bad?
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Not according to the prayer of the people,
+for they love not Marcius.
+</statement>
+</character>
+
+<character name="Brutus">
+<statement form="dialogue">
+Nature teaches beasts to know their friends.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Pray you, who does the wolf love?
+</statement>
+</character>
+
+<character name="Brutus">
+<statement form="dialogue">
+The lamb.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Ay, to devour him; as the hungry plebeians would
+the noble Marcius.
+</statement>
+</character>
+
+<stage_direction>
+[Enter an Aedile with news]
+</stage_direction>
+
+<character name="Aedile">
+<statement form="dialogue">
+Here is news, sir, of a battle near Corioli.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Have we lost it?
+</statement>
+</character>
+
+<character name="Aedile">
+<statement form="dialogue">
+No, sir; but Marcius is slain.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Marcius slain!
+</statement>
+</character>
+
+<character name="Aedile">
+<statement form="dialogue">
+Ay, if you truly call him slain: for now he is a
+god, and many will worship him as one. He has
+won the city of Corioli single-handed.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+O, come on! What else is there to be said?
+All good news should end with Marcius!
+</statement>
+</character>
+
+<character name="Brutus">
+<statement form="dialogue">
+You speak in favour of Marcius, Menenius.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+He has done nobly, and cannot be blamed for speaking
+as a true friend.
+</statement>
+</character>
+
+<character name="Sicinius">
+<statement form="dialogue">
+The plebeians will revolt if he is praised too much.
+</statement>
+</character>
+
+<character name="Brutus">
+<statement form="dialogue">
+Let us suppress the news of his victory; the people
+will love him for it too much otherwise.
+</statement>
+</character>
+
+<character name="Menenius">
+<statement form="dialogue">
+Heaven forbid! Why, then your honour must be muffled.
+What will the people think when they hear that you
+kept such glorious news from them?
+</statement>
+</character>
+
+<character name="Sicinius">
+<statement form="dialogue">
+The people are already discontented with his return.
+He is too proud, Menenius; too proud.
+</statement>
+</character>
+
+<stage_direction>
+[Trumpets sound, and SENATORS enter, announcing MARCIUS' return.]
+</stage_direction>
+
+<character name="Senator">
+<statement form="dialogue">
+Marcius comes home victorious. The city of Corioli
+is taken, and the name of Marcius will forever be
+linked with this great triumph.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt all except MENENIUS]
+</stage_direction>
+
+<character name="Menenius">
+<statement form="monologue">
+Now is the time for Marcius to rise in fame. His
+victory will be remembered throughout Rome's history.
+The people may not love him, but they will
+respect him. And that, in the end, is what matters.
+</statement>
+</character>
+
+<stage_direction>
+[Exit MENENIUS]
+</stage_direction>
+
+<stage_direction>
+[Scene VII. The gates of Corioli.]
+</stage_direction>
+
+<stage_direction>
+TITUS LARTIUS, having set a guard upon Corioli, going with drum and trumpet toward COMINIUS and CAIUS MARCIUS, enters with a lieutenant, other soldiers, and a scout
+</stage_direction>
+
+<character name="Titus Lartius">
+<statement form="dialogue">
+So, let the ports be guarded: keep your duties,
+As I have set them down. If I do send, dispatch
+Those centuries to our aid; the rest will serve
+For a short holding: if we lose the field,
+We cannot keep the town.
+</statement>
+</character>
+
+<character name="Lieutenant">
+<statement form="dialogue">
+Fear not our care, sir.
+</statement>
+</character>
+
+<stage_direction>
+[Exit LIEUTENANT, guarded]
+</stage_direction>
+
+<character name="Titus Lartius">
+<statement form="monologue">
+Hence, and shut your gates upon's:
+Our guider, come; to the Roman camp conduct us.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt]
+</stage_direction>
+
+<stage_direction>
+[Scene VIII. A field of battle between the Roman and the Volscian camps.]
+</stage_direction>
+
+<stage_direction>
+Enter MARCIUS and AUFIDIUS
+</stage_direction>
+
+<character name="Aufidius">
+<statement form="dialogue">
+I'll fight with none but thee;
+For I do hate thee worse than a promise-breaker.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+We hate alike:
+Not Afric owns a serpent I abhor
+More than thy fame and envy: fix thy foot.
+</statement>
+</character>
+
+<stage_direction>
+[They fight, and certain Volsces come to the aid of AUFIDIUS. MARCIUS fights till they be driven in breathless.]
+</stage_direction>
+
+<character name="Marcius">
+<statement form="dialogue">
+Officious, and not valiant, you have shamed me
+In your condemned seconds.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt fighting, driven in by MARCIUS]
+</stage_direction>
+
+<stage_direction>
+[Scene IX. The Roman camp.]
+</stage_direction>
+
+<stage_direction>
+Flourish. Alarum. A retreat is sounded. Flourish. Enter, from one side, COMINIUS with the Romans; from the other side, MARCIUS, with his arm in a scarf.
+</stage_direction>
+
+<character name="Cominius">
+<statement form="dialogue">
+If I should tell thee o'er this thy day's work,
+Thou'ldst not believe thy deeds: but I'll report it
+Where senators shall mingle tears with smiles,
+Where great patricians shall attend and shrug,
+I' the end admire, where ladies shall be frighted
+And, gladly quaked, hear more; where the dull tribunes,
+That, with the fusty plebeians, hate thine honours,
+Shall say, against their hearts 'We thank the gods
+Our Rome hath such a soldier.'
+Yet camest thou to a morsel of this feast,
+Having fully dined before.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+I have done as you have done; that's what I can:
+Induced as you have been; that's for my country:
+He that has but effected his good will
+Hath overta'en mine act.
+</statement>
+</character>
+
+<character name="Cominius">
+<statement form="dialogue">
+You shall not be
+The grave of your deserving; Rome must know
+The value of her own: 'twere a concealment
+Worse than a theft, no less than a traducement,
+To hide your doings; and to silence that,
+Which, to the spire and top of praises vouch'd,
+Would seem but modest: therefore, I beseech you
+In sign of what you are, not to reward
+What you have done, before our army hear me.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+I have some wounds upon me, and they smart
+To hear themselves remember'd.
+</statement>
+</character>
+
+<character name="Cominius">
+<statement form="dialogue">
+Should they not,
+Well might they fester 'gainst ingratitude
+And tent themselves with death. Of all the horses,
+Whereof we have ta'en good, and good store, of all
+The treasure in this field achieved and city,
+We render you the tenth; to be ta'en forth,
+Before the common distribution, at
+Your only choice.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+I thank you, general;
+But cannot make my heart consent to take
+A bribe to pay my sword: I do refuse it;
+And stand upon my common part with those
+That have beheld the doing.
+</statement>
+</character>
+
+<character name="Cominius">
+<statement form="dialogue">
+May these same instruments, which you profane,
+Never sound more! When drums and trumpets shall
+I' the field prove flatterers, let courts and cities be
+Made all of false-faced soothing!
+When steel grows soft as the parasite's silk,
+Let him be made a coverture for the wars!
+No more, I say! For that I have not wash'd
+My nose that bled, or foil'd some debile wretch,
+Which, without note, here's many else have done,
+You shout me forth
+In acclamations hyperbolical;
+As if I loved my little should be dieted
+In praises sauced with lies.
+</statement>
+</character>
+
+<character name="Cominius">
+<statement form="dialogue">
+Too modest are you;
+More cruel to your good report than grateful
+To us that give you truly: by your patience,
+If 'gainst yourself you be incensed, we'll put you,
+Like one that means his proper harm, in manacles,
+Then reason safely with you. Therefore, be it known,
+As to us, to all the world, that Caius Marcius
+Wears this war's garland: in token of the which,
+My noble steed, known to the camp, I give him,
+With all his trim belonging; and from this time,
+For what he did before Corioli, call him,
+With all the applause and clamour of the host,
+Caius Marcius Coriolanus! Bear
+The addition nobly ever!
+</statement>
+</character>
+
+<stage_direction>
+[Flourish. Trumpets sound, and drums]
+</stage_direction>
+
+<character name="All">
+<statement form="dialogue">
+Caius Marcius Coriolanus!
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+I will go wash;
+And when my face is fair, you shall perceive
+Whether I blush, or no: howbeit, I thank you:
+I mean to stride your steed; and at all times
+To undercrest your good addition
+To the fairness of my power.
+</statement>
+</character>
+
+<character name="Cominius">
+<statement form="dialogue">
+So, to our tent;
+Where, ere we do repose us, we will write
+To Rome of our success. You, Titus Lartius,
+Must to Corioli back: send us to Rome
+The best, with whom we may articulate,
+For their own good and ours.
+</statement>
+</character>
+
+<character name="Titus Lartius">
+<statement form="dialogue">
+I shall, my lord.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+The gods begin to mock me. I, that now
+Refused most princely gifts, am bound to beg
+Of my lord general.
+</statement>
+</character>
+
+<character name="Cominius">
+<statement form="dialogue">
+Take't; 'tis yours. What is't?
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+I sometime lay here in Corioli
+At a poor man's house; he used me kindly:
+He cried to me; I saw him prisoner;
+But then Aufidius was within my view,
+And wrath o'erwhelm'd my pity: I request you
+To give my poor host freedom.
+</statement>
+</character>
+
+<character name="Cominius">
+<statement form="dialogue">
+O, well begg'd!
+Were he the butcher of my son, he should
+Be free as is the wind. Deliver him, Titus.
+</statement>
+</character>
+
+<character name="Titus Lartius">
+<statement form="dialogue">
+Marcius, his name?
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+By Jupiter! forgot.
+I am weary; yea, my memory is tired.
+Have we no wine here?
+</statement>
+</character>
+
+<stage_direction>
+[Flourish. A march. Enter a Messenger]
+</stage_direction>
+
+<character name="Messenger">
+<statement form="dialogue">
+The captain of the Volsces will appear
+Before you, lord, in person, to confess
+The manner of his wounds received in the battle
+Against the Volsces.
+</statement>
+</character>
+
+<character name="Marcius">
+<statement form="dialogue">
+All the people should
+Clap their hands and applaud. Hear it not;
+But make ready, and find your host of woe.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt]
+</stage_direction>
+
+<character name="Tullus Aufidius">
+<statement form="monologue">
+What's the news?
+</statement>
+</character>
+
+<character name="First Senator">
+<statement form="dialogue">
+My lord, the news is news that comes too late;
+Unless I have missed it: for the Volsces are in arms.
+</statement>
+</character>
+
+<character name="Tullus Aufidius">
+<statement form="monologue">
+They have begun a state war. I fear
+It will not hold. 
+What do you want to know about this latest news?
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt Senators]
+</stage_direction>
+
+<character name="Second Messenger">
+<statement form="dialogue">
+Yes, my lord.
+</statement>
+</character>
+
+<character name="First Messenger">
+<statement form="dialogue">
+Yes, my lord.
+</statement>
+</character>
+
+<character name="Caius Marcius">
+<statement form="dialogue">
+What news?
+</statement>
+</character>
+
+<character name="First Messenger">
+<statement form="dialogue">
+Rome is taken.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt all]
+</stage_direction>
+
+<character name="Brutus">
+<statement form="dialogue">
+Forth with him to the people; his late pleasures
+Leave him a joyless man.
+</statement>
+</character>
+
+<character name="Volumnia">
+<statement form="dialogue">
+'Tis not enough.
+</statement>
+</character>
+
+<character name="Second Senator">
+<statement form="dialogue">
+He's coming from the senate: please you to meet him.
+</statement>
+</character>
+
+<character name="Tullus Aufidius">
+<statement form="dialogue">
+He comes too late.
+</statement>
+</character>
+
+<character name="First Senator">
+<statement form="dialogue">
+Let's do him honour; he's the rock, the oak,
+Not to be wind-shaken.
+</statement>
+</character>
+
+<character name="Second Senator">
+<statement form="dialogue">
+Farewell, kind lord: fight well to-day.
+</statement>
+</character>
+
+<character name="Caius Marcius">
+<statement form="dialogue">
+Farewell, noble Volscians.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+To the rock.
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+You that have long been true to us, speak well.
+</statement>
+</character>
+
+<character name="Caius Marcius">
+<statement form="dialogue">
+My gentle friends, you must not go into the wars.
+You must be yourselves.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt Citizens]
+</stage_direction>
+
+<character name="First Senator">
+<statement form="dialogue">
+He's coming from the senate: please you to meet him.
+</statement>
+</character>
+
+<character name="Caius Marcius">
+<statement form="monologue">
+No more! but let me take leave of the senate:
+Let me go in peace.
+</statement>
+</character>
+
+<stage_direction>
+[Exit]
+</stage_direction>
+
+<character name="Second Senator">
+<statement form="dialogue">
+Follow him in, and give him leave to go in peace.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt all]
+</stage_direction>
+
+<character name="First Senator">
+<statement form="dialogue">
+The augurer tells me we shall have news to-night.
+</statement>
+</character>
+
+<character name="Second Senator">
+<statement form="dialogue">
+Good or bad?
+</statement>
+</character>
+
+<character name="First Senator">
+<statement form="dialogue">
+Not according to the prayer of the people, for they
+love not Marcius.
+</statement>
+</character>
+
+<character name="Second Senator">
+<statement form="dialogue">
+Nature teaches beasts to know their friends.
+</statement>
+</character>
+
+<character name="First Senator">
+<statement form="dialogue">
+Pray you, who does the wolf love?
+</statement>
+</character>
+
+<character name="Second Senator">
+<statement form="dialogue">
+The lamb.
+</statement>
+</character>
+
+<character name="First Senator">
+<statement form="dialogue">
+Ay, to devour him; as the hungry plebeians would
+the noble Marcius.
+</statement>
+</character>
+
+<character name="Second Senator">
+<statement form="dialogue">
+He's a bear indeed, that lives like a lamb.
+</statement>
+</character>
+
+<character name="First Senator">
+<statement form="dialogue">
+It shall be to his life as the blood to the liver,
+the warmth to the heart.
+</statement>
+</character>
+
+<character name="Second Senator">
+<statement form="dialogue">
+Let's go see him and greet him at the gates.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt all]
+</stage_direction>
+
+<character name="Caius Marcius">
+<statement form="dialogue">
+O me alone! Make you a sword of me.
+</statement>
+</character>
+
+<character name="Tullus Aufidius">
+<statement form="dialogue">
+I fought with Marcius.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+I say unto you, what he hath done famously,
+He did it to that end.
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+He's no better than what they call him--a good workman.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+True, and it was his way to glory in himself.
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+I say no less.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+You would not have me say he gloried in corruption.
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+Corruption! What is it?
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+A very good deed: there's much good in it.
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+Hark ye, the drums are beating.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+I'll watch till he be through the city, and then
+I'll come and see what will become of him.
+</statement>
+</character>
+
+<stage_direction>
+[Exeunt all]
+</stage_direction>
+
+<character name="Coriolanus">
+<statement form="monologue">
+He is their god; he leads them like a thing
+Made by some other deity than Nature,
+That shapes man better: and they follow him
+Against us brats, with no less confidence
+Than boys pursuing summer butterflies,
+Or butchers killing flies.
+</statement>
+</character>
+
+<character name="Aufidius">
+<statement form="dialogue">
+You slaves of Rome, you have done nothing yet:
+If we do not bring him off, we'll cry we are traitors
+And betray ourselves.
+</statement>
+</character>
+
+<stage_direction>
+[Alarum continues still afar off]
+</stage_direction>
+
+<character name="Coriolanus">
+<statement form="monologue">
+He will make the right hand of his cause,
+And his account of his reason; and some one
+Shall take him to the death. But O, thy heart!
+It thunders down its challenge: I must pause
+Till it is on.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+See, here he comes, and in his face
+Appears no fear.
+</statement>
+</character>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+O, he is wounded; I thank the gods for't.
+</statement>
+</character>
+
+<character name="First Citizen">
+<statement form="dialogue">
+O, he's wounded, I thank the gods for't.
+</statement>
+</character>
+
+<stage_direction>
+[Enter CORIOLANUS with AUFIDIUS]
+</stage_direction>
+
+<character name="Coriolanus">
+<statement form="monologue">
+You shout your cries into the clouds,
+And wait for nothing but to be awed
+By the noise of them: the gods may keep the mind
+Of our great general, but he needs no praise.
+</statement>
+</character>
+
+<character name="Aufidius">
+<statement form="dialogue">
+And we are all undone. Take him down,
+And make good men of you.
+</statement>
+</character>
+
+<character name="Coriolanus">
+<statement form="monologue">
+If we are to die, let it be for truth
+And honor, not for that which falsely claims it.
+</statement>
+</character>
+
+<stage_direction>
+[They fight]
+</stage_direction>
+
+<character name="Second Citizen">
+<statement form="dialogue">
+This is a most dangerous condition. How now, Aufidius?
+</statement>
+</character>
+
+<character name="Aufidius">
+<statement form="dialogue">
+To the gods we will leave this. Yet, a word more,
+And Rome may fall under this.
+</statement>
+</character>
+
+<character name="Coriolanus">
+<statement form="monologue">
+O, 'tis well;
+And I will take up from hence the honor
+Of a fall, never to rise again.
+</statement>
+</character>
+
+<character name="Aufidius">
+<statement form="dialogue">
+Take up the body: such a sight as this
+Becomes the field, but here shows much amiss.
+</statement>
+</character>
+
+<stage_direction>
+[They exit, bearing the body of Coriolanus]
+</stage_direction>
+
+<character name="First Citizen">
+<statement form="monologue">
+See, now, whether he hath not his true full form.
+</statement>
+</character>
+
+<stage_direction>
+[They leave the stage]
+</stage_direction>
