@@ -24,6 +24,11 @@ import time
 
 import matplotlib.pyplot as plt
 
+from tokeniser import Tokenizer
+
+tokenizer = Tokenizer()
+
+
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 for device in physical_devices:
     tf.config.experimental.set_memory_growth(device, True)
@@ -35,9 +40,9 @@ torch.cuda.memory.set_per_process_memory_fraction(0.9)
 # hyperparameters
 batch_size = 48 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 600
+max_iters = 5000
 eval_interval = 100
-min_val_loss = 1.289  # if validation loss below this value quit and save early
+min_val_loss = 0.089  # if validation loss below this value quit and save early
 loss_separation = 0.5  # difference between val loss and train loss
 
 # variable learning rate
@@ -72,8 +77,8 @@ labels = {
 data_folder = "dataset"
 datafile = "input-formatedFull.txt"
 model_folder = "models"
-model_file = "gptnv_normal21a.pth"
-save_file = "gptnv_normal21a.pth"
+model_file = "gptnv_normal21fine.pth"
+save_file = "gptnv_normal21fine.pth"
 preprocessor_model = "preprocessor_model.pth"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -148,17 +153,21 @@ with open(datafile, 'r', encoding='utf-8') as f:
     text = f.read()                          # change to the tokenizer.
 
 # Additional Characters not found in the text
-additional_chars = r"<>[]{}123456780\?-+=#$" #
+#additional_chars = r"<>[]{}123456780\?-+=#$" #
 
 # here are all the unique characters that occur in this text
-chars = sorted(list(set(text) | set(additional_chars)))
-vocab_size = len(chars)
+#chars = sorted(list(set(text) | set(additional_chars)))
+#vocab_size = len(chars)
 
 # create a mapping from characters to integers
-stoi = {ch: i for i,ch in enumerate(chars)}
-itos = {i: ch for i,ch in enumerate(chars)}
-encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
-decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
+# stoi = {ch: i for i,ch in enumerate(chars)}
+# itos = {i: ch for i,ch in enumerate(chars)}
+# encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
+# decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
+
+encode = tokenizer.encode
+decode = tokenizer.decode
+vocab_size = tokenizer.get_vocab_size()
 
 # Train and test splits
 data = torch.tensor(encode(text), dtype=torch.long)
