@@ -1,3 +1,8 @@
+import os
+import sys
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppresses all logs except errors
+
 import tensorflow as tf
 tf.get_logger().setLevel('ERROR')
 

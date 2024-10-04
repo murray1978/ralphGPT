@@ -1,6 +1,9 @@
 import os
 import signal
 import sys
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppresses all logs except errors
+
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
@@ -14,6 +17,7 @@ import tensorflow as tf
 import threading
 import time
 import gc
+
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 for device in physical_devices:
