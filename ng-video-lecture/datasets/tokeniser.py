@@ -41,10 +41,9 @@ class Tokenizer:
 
     def append_special(self, _token):
         if self.tokens_special.count(_token) == 0:
-            print(f"appending {_token}")
             self.tokens_special.append(_token)
             self.chars = sorted(list(
-            set(self.tokens_alpha)
+                set(self.tokens_alpha)
                 | set(self.tokens_numbers)
                 | set(self.tokens_sentence)
                 | set(self.tokens_tokens)
@@ -53,7 +52,6 @@ class Tokenizer:
             self.vocab_size = len(self.chars)
             self.stoi = {ch: i for i, ch in enumerate(self.chars)}
             self.itos = {i: ch for i, ch in enumerate(self.chars)}
-            
 
     def get_tokens(self):
         _tokens = list( set(self.tokens_special)
