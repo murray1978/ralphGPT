@@ -7,7 +7,7 @@ class Tokenizer:
         ]
         self.tokens_numbers = r"1234567890/+-*="
         self.tokens_tokens = r"\<>[]{}!@#%^&()$"
-        self.tokens_sentence = r"? ,—_.:;'\""
+        self.tokens_sentence = r"? ,—_.:;'’\""
         self.tokens_alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\t\n"
         self.chars = sorted(list(
             set(self.tokens_alpha)

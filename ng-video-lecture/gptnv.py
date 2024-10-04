@@ -38,12 +38,12 @@ torch.cuda.set_per_process_memory_fraction(0.8, 0)
 torch.cuda.memory.set_per_process_memory_fraction(0.9)
 
 # hyperparameters
-batch_size = 48 # 64 how many independent sequences will we process in parallel? '48 works'
+batch_size = 64 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
 max_iters = 5000
 eval_interval = 100
-min_val_loss = 0.089  # if validation loss below this value quit and save early
-loss_separation = 0.5  # difference between val loss and train loss
+min_val_loss = 0.0089  # if validation loss below this value quit and save early
+loss_separation = 0.9  # difference between val loss and train loss
 
 # variable learning rate
 learning_rate_fine = 1e-5
@@ -74,12 +74,13 @@ labels = {
 # how to generate conversation context
 
 # Data files
-data_folder = "dataset"
-datafile = "input-formatedFull.txt"
-model_folder = "models"
-model_file = "gptnv_normal21fine.pth"
-save_file = "gptnv_normal21fine.pth"
-preprocessor_model = "preprocessor_model.pth"
+data_folder = "datasets/"
+# datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
+datafile = data_folder + "input.txt"
+model_folder = "models/"
+model_file = model_folder + "gptnv_normal.pth"
+save_file = model_folder + "gptnv_normal.pth"
+preprocessor_model = model_folder + "preprocessor_model.pth"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f'Using device {device}')
@@ -150,8 +151,9 @@ torch.manual_seed(1337)
 
 # wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
 with open(datafile, 'r', encoding='utf-8') as f:
-    text = f.read()                          # change to the tokenizer.
+    text = f.read()                          
 
+# Change to the tokenizer
 # Additional Characters not found in the text
 #additional_chars = r"<>[]{}123456780\?-+=#$" #
 
@@ -164,6 +166,19 @@ with open(datafile, 'r', encoding='utf-8') as f:
 # itos = {i: ch for i,ch in enumerate(chars)}
 # encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
 # decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
+tokenizer.append_special("__eou__")
+tokenizer.append_special("。")
+tokenizer.append_special('~')
+tokenizer.append_special('‘')
+tokenizer.append_special('¥')
+tokenizer.append_special('£')
+tokenizer.append_special('′')
+tokenizer.append_special('°')
+tokenizer.append_special('–')
+tokenizer.append_special('“')
+tokenizer.append_special('”')
+tokenizer.append_special('\x7f')
+tokenizer.append_special('、')  # at this point we should be modifiying tokenaizer.
 
 encode = tokenizer.encode
 decode = tokenizer.decode
