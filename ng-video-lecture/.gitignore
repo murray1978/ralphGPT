@@ -1,0 +1,4 @@
+# ignore zip files
+__pycache__/
+models/
+

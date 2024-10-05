@@ -35,6 +35,9 @@ class Tokenizer:
                 _tokens.append(self.stoi[_text[i]])
                 i += 1
         return _tokens
+    
+    def getToken(self, text):
+        return self.encode(text)
 
     def decode(self, data):
         return ''.join([self.itos[i] for i in data])

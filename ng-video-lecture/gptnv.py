@@ -38,15 +38,15 @@ torch.cuda.set_per_process_memory_fraction(0.8, 0)
 torch.cuda.memory.set_per_process_memory_fraction(0.9)
 
 # hyperparameters
-batch_size = 64 # 64 how many independent sequences will we process in parallel? '48 works'
+batch_size = 48 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 5000
-eval_interval = 100
-min_val_loss = 0.0089  # if validation loss below this value quit and save early
-loss_separation = 0.9  # difference between val loss and train loss
+max_iters = 8000
+eval_interval = 400
+min_val_loss = .90  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
+loss_separation = 0.3  # difference between val loss and train loss
 
 # variable learning rate
-learning_rate_fine = 1e-5
+learning_rate_fine = 1e-5 # 1e-5 
 learning_rate = 2e-4  # 3e-4
 
 # Transformer parameters
@@ -59,7 +59,7 @@ dropout = 0.25  # does not effect model
 
 with_memory = False
 
-# user conversation will have bits from, may not need brackets
+# user conversation will have bits from, may not need brackets, move to tokenizer.labels
 labels = {
     "userLabel": "</user text=\"\">",
     "adminLabel": "</admin text=\"\">",
@@ -75,11 +75,11 @@ labels = {
 
 # Data files
 data_folder = "datasets/"
-# datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
-datafile = data_folder + "input.txt"
+datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
+# datafile = data_folder + "input-formatedFull.txt"
 model_folder = "models/"
-model_file = model_folder + "gptnv_normal.pth"
-save_file = model_folder + "gptnv_normal.pth"
+model_file = model_folder + "gptnv.pth"
+save_file = model_folder + "gptnv.pth"
 preprocessor_model = model_folder + "preprocessor_model.pth"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -184,11 +184,12 @@ encode = tokenizer.encode
 decode = tokenizer.decode
 vocab_size = tokenizer.get_vocab_size()
 
-# Train and test splits
-data = torch.tensor(encode(text), dtype=torch.long)
-n = int(0.9*len(data)) # first 90% will be train, rest val
-train_data = data[:n]
-val_data = data[n:]
+if not for_chat: # do not need to set up a dataset in chat
+    # Train and test splits
+    data = torch.tensor(encode(text), dtype=torch.long)
+    n = int(0.9*len(data)) # first 90% will be train, rest val
+    train_data = data[:n]
+    val_data = data[n:]
 
 
 # data loading
@@ -421,8 +422,9 @@ class GPTLanguageModel(nn.Module):
         torch.cuda.empty_cache()
         return logits, loss
 
-    def generate(self, idx, max_new_tokens):
+    def generate(self, idx, max_new_tokens, stop_token=None):
         self.secondary_memory = None
+        stop_token = stop_token[-1]   #we should move this out of here.
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -block_size:]
             logits, loss = self(idx_cond)
@@ -430,6 +432,9 @@ class GPTLanguageModel(nn.Module):
             probs = F.softmax(logits, dim=-1)  # (B, C)
             idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
             idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
+            last_item = idx[:,-1].cpu().item()  # end token?
+            if last_item == stop_token:     
+                return idx
         return idx
 
     def generate_compressed(self, idx, max_new_tokens):
@@ -463,11 +468,25 @@ class GPTLanguageModel(nn.Module):
 def generate_response(_model, _query, max_new_tokens=60):
     _model.eval()
     input_ids = torch.tensor(encode(_query), dtype=torch.long).unsqueeze(0).to(device)
+
     if with_memory:
         output_ids = _model.generate_compressed(input_ids, max_new_tokens=max_new_tokens)
     else:
-        output_ids = _model.generate(input_ids, max_new_tokens=max_new_tokens)
-    return decode(output_ids[0].tolist())
+        output_ids = _model.generate(input_ids, max_new_tokens=max_new_tokens, stop_token=tokenizer.getToken('__eou__'))
+
+    # Get the token ID for "__eou__"
+    eou_token_id = tokenizer.getToken('__eou__')
+    eou_token_id = eou_token_id[-1]
+    
+    # Check if output_ids is a tensor
+    if isinstance(output_ids, torch.Tensor):
+        output_ids = output_ids.tolist()  # Convert tensor to a list
+    
+    # Remove any occurrences of the "__eou__" token from output_ids
+    output_ids = [token for token in output_ids[0] if token != eou_token_id]  # Process the sequence
+    
+    # return decode(output_ids[0].tolist())
+    return decode(output_ids)
 
 import random
 import string
@@ -625,7 +644,8 @@ elif for_chat:
         _input = input(":")
         # _input = input_with_timeout(":", timeout=10)  # Timeout after 5 seconds
         if _input:
-            user_input += "<character name=user><question>" + _input + "</question></character>"
+            # user_input += "<character name=user><question>" + _input + "</question></character>"
+            user_input += _input + " __eou__"
         else:
             user_input += generate_random_chars() + "?"
         response = generate_response(model, user_input, max_new_tokens=256)
