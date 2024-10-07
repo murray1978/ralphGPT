@@ -1,7 +1,11 @@
 # Compressive Transformer, from the paper COMPRESSIVE TRANSFORMERS FOR LONG-RANGE SEQUENCE MODELLING,
-# adapted from comp_gpt.py from gpt_QA.py
+# adapted from gptnv.py from comp_gpt.py from gpt_QA.py
 # using this as a learing and testbed GPT.
 # elapsed time incorrect, it's more like time accumulation.
+# 6/10/24 tidy up and add json for models/parameters
+#
+# Idea's
+#   Save the tokens with the model, include an unknown token
 import os
 import sys
 
@@ -23,6 +27,8 @@ from TrainingTimer import TrainingTimer
 import time
 
 import matplotlib.pyplot as plt
+
+import json
 
 from tokeniser import Tokenizer
 
@@ -59,7 +65,7 @@ dropout = 0.25  # does not effect model
 
 with_memory = False
 
-# user conversation will have bits from, may not need brackets, move to tokenizer.labels
+# user conversation labels, to be added at a future date
 labels = {
     "userLabel": "</user text=\"\">",
     "adminLabel": "</admin text=\"\">",
@@ -71,16 +77,34 @@ labels = {
     "statementStart": "<statement>",
     "statementEnd": "</statement>",
 }
-# how to generate conversation context
+
+model_params = {
+    "learning_rate": 0.001,
+    "epochs": 50,
+    "batch_size": 32,
+}
 
 # Data files
 data_folder = "datasets/"
 datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
 # datafile = data_folder + "input-formatedFull.txt"
-model_folder = "models/"
-model_file = model_folder + "gptnv2.pth"
-save_file = model_folder + "gptnv2.pth"
-preprocessor_model = model_folder + "preprocessor_model.pth"
+# model files
+model_path = "models/"
+model_ext = ".pth"
+model_filename = "gptnv2"
+model_file = model_path + model_filename + model_ext
+save_file = model_path + model_filename + "" + model_ext
+# parameter file
+param_file = model_path + model_filename + ".json"
+
+#lets load the parameters
+if os.path.exists(param_file):
+    print(f"json file {param_file} found, loading")
+else:
+    print(f"json file {param_file} not found, creating")
+
+# comment out for now may use it with second GPU
+# preprocessor_model = model_folder + "preprocessor_model.pth"
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f'Using device {device}')
@@ -103,45 +127,32 @@ def select_mode():
     print("1. Train")
     print("2. Fine-Tune")
     print("3. Chat")
-    print("4. Show Loss")
-    print("5. Show Graphs")
 
     choice = input("Enter the number corresponding to your choice: ")
 
     _fine_tune = False
     _for_chat = False
     _train_only = False
-    _print_loss = False
-    _show_graphs = False
-    _interativePlot = False
 
     if choice == '1':
         _train_only = True
-        _interativePlot = True
         print("Training mode selected.")
     elif choice == '2':
         _fine_tune = True
-        _interativePlot = True
         print("Fine-Tuning mode selected.")
     elif choice == '3':
         _for_chat = True
         print("Chat mode selected.")
-    elif choice == '4':
-        _print_loss = True
-        print("Show Loss mode selected.")
-    elif choice == '5':
-        _show_graphs = True
-        print("Show Graphs mode selected.")
     else:
         print("Invalid choice. Defaulting to Training mode.")
         _train_only = True
 
-    return _fine_tune, _for_chat, _train_only, _print_loss, _show_graphs, _interativePlot
+    return _fine_tune, _for_chat, _train_only
 
 
 # Training, tuning or chatting, we run out of memory if we train then chat.
 # Select the mode
-fine_tune, for_chat, train_only, print_loss, show_graphs, interativePlot = select_mode()
+fine_tune, for_chat, train_only = select_mode()
 
 small_memory_size = 512
 medium_memory_size = 1024
@@ -149,7 +160,7 @@ large_memory_size = 2048 + 1024
 
 torch.manual_seed(1337)
 
-# wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
+# Open up the inputfile for the tokenizer
 with open(datafile, 'r', encoding='utf-8') as f:
     text = f.read()                          
 
@@ -166,6 +177,7 @@ with open(datafile, 'r', encoding='utf-8') as f:
 # itos = {i: ch for i,ch in enumerate(chars)}
 # encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
 # decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
+print("adding special tokens to tokenizer")
 tokenizer.append_special("__eou__")
 tokenizer.append_special("。")
 tokenizer.append_special('~')
@@ -180,11 +192,12 @@ tokenizer.append_special('”')
 tokenizer.append_special('\x7f')
 tokenizer.append_special('、')  # at this point we should be modifiying tokenaizer.
 
+# create a reference to the encoder and decoder
 encode = tokenizer.encode
 decode = tokenizer.decode
 vocab_size = tokenizer.get_vocab_size()
 
-if not for_chat: # do not need to set up a dataset in chat
+if not for_chat: # do not need to set up a dataset if in chat
     print("preping dataset")
     # Train and test splits
     data = torch.tensor(encode(text), dtype=torch.long)
@@ -437,6 +450,63 @@ class GPTLanguageModel(nn.Module):
             if last_item == stop_token:     
                 return idx
         return idx
+  
+
+    def generate_nv(self, idx, max_new_tokens, stop_token=None, temperature=1.0, top_p=0.9):
+        self.secondary_memory = None
+        stop_token = stop_token[-1]  # Move this outside if needed
+
+        for _ in range(max_new_tokens):
+            idx_cond = idx[:, -block_size:]
+            
+            # Forward pass to get logits
+            logits, loss = self(idx_cond)
+            logits = logits[:, -1, :]  # (B, C)
+
+            # Apply temperature scaling
+            if temperature != 1.0:
+                logits = logits / temperature
+
+            # Convert logits to probabilities using softmax
+            probs = F.softmax(logits, dim=-1)  # (B, C)
+
+            # Apply top-p (nucleus) sampling
+            if top_p < 1.0:
+                sorted_probs, sorted_indices = torch.sort(probs, descending=True)
+                cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+
+                # Remove tokens with cumulative probability above the threshold (top_p)
+                sorted_probs = sorted_probs[cumulative_probs <= top_p]
+                sorted_indices = sorted_indices[cumulative_probs <= top_p]
+                            # Ensure there are tokens remaining to sample from
+                if sorted_probs.size(-1) > 0:
+                    # Normalize the remaining probabilities
+                    probs = sorted_probs / torch.sum(sorted_probs, dim=-1, keepdim=True)
+
+                    # Sample from the filtered probabilities
+                    idx_next = sorted_indices[torch.multinomial(probs, num_samples=1)]  # (B, 1)
+                else:
+                    # If no tokens are left after filtering, sample from the original distribution
+                    idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
+
+            else:
+                # Sample without top-p filtering
+                idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
+
+            # Ensure idx_next is 2D
+            if idx_next.dim() == 1:  # If idx_next is 1D, we need to unsqueeze
+                idx_next = idx_next.unsqueeze(1)
+
+            # Append the new token to the sequence
+            idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
+
+            # Check if the generated token matches the stop token
+            last_item = idx[:, -1].cpu().item()
+            if last_item == stop_token:
+                return idx
+
+        return idx
+
 
     def generate_compressed(self, idx, max_new_tokens):
         self.secondary_memory = None
@@ -473,7 +543,7 @@ def generate_response(_model, _query, max_new_tokens=60):
     if with_memory:
         output_ids = _model.generate_compressed(input_ids, max_new_tokens=max_new_tokens)
     else:
-        output_ids = _model.generate(input_ids, max_new_tokens=max_new_tokens, stop_token=tokenizer.getToken('__eou__'))
+        output_ids = _model.generate_nv(input_ids, max_new_tokens=max_new_tokens, stop_token=tokenizer.getToken('__eou__'))
 
     # Get the token ID for "__eou__"
     eou_token_id = tokenizer.getToken('__eou__')
@@ -514,6 +584,7 @@ def input_with_timeout(prompt, timeout):
 
 
 model = GPTLanguageModel(max_memory_size=large_memory_size)
+
 if os.path.exists(model_file):
     print(f'Using {model_file} ')
     model.load_state_dict(torch.load(model_file))
@@ -536,9 +607,6 @@ iteration_times = []
 
 start_time = time.time()
 
-if interativePlot:
-    plt.ion()
-    fig, ax = plt.subplots()
 
 # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.8, patience=20)
@@ -583,16 +651,6 @@ for iter in range(max_iters):
         remaining_time = timer.update()
         print(f"Estimated time remaining: {timer.format_time(remaining_time)}")
 
-        if interativePlot:
-            # Update the plot
-            ax.clear()
-            ax.plot(training_loss, label='Training Loss')
-            ax.plot(validation_loss, label='Validation Loss')
-            ax.set_xlabel('Evaluation Intervals')
-            ax.set_ylabel('Loss')
-            ax.set_title('Training and Validation Loss Over Time')
-            ax.legend()
-            plt.pause(0.01)  # Pause to update the plot
 
     # sample a batch of data
     xb, yb = get_batch('train', data)
@@ -612,50 +670,116 @@ for iter in range(max_iters):
     torch.cuda.empty_cache()
     gc.collect()
 
-if interativePlot:
-    # After training, keep the plot open
-    plt.ioff()
-    plt.show()
 
 if not for_chat:
     print(f"Saving {save_file}")
     # Save the model
     torch.save(model.state_dict(), save_file)
+    print(f"Saving json file {param_file} for model params")
+    with open("test.json", 'w') as f:
+        json.dump(model_params, f)
 
-if show_graphs:
-    import matplotlib.pyplot as plt
+MAX_HISTORY_TOKENS = 512  # You can adjust this value based on the model's block size
 
-    plt.plot(training_loss, label='Training Loss')
-    plt.plot(validation_loss, label='Validation Loss')
-    plt.xlabel('Evaluation Intervals')
-    plt.ylabel('Loss')
-    plt.title('Training and Validation Loss Over Time')
-    plt.legend()
-    plt.show()
+def trim_conversation_history(conversation, max_length=MAX_HISTORY_TOKENS):
+    """
+    Trim the conversation history to ensure it doesn't exceed the max token length.
+    """
+    # Tokenize conversation to count tokens
+    tokens = tokenizer.encode(conversation)
+    if len(tokens) > max_length:
+        # Truncate the oldest part of the conversation
+        trimmed_tokens = tokens[-max_length:]
+        return tokenizer.decode(trimmed_tokens)
+    return conversation
 
-if fine_tune and not for_chat:
-    # Example queries
-    query = "[Q]: Who is Romeo?\n[A]:"
-    response = generate_response(model, query)
-    print(response)
 
-elif for_chat:
+# Not happy with original chat, chatGPT 4o helped with the new one.
+def chat_loop(model):
     user_input = ""
+    print("Enter your queries. Type 'exit' to quit.")
+
     while True:
-        _input = input(":")
-        # _input = input_with_timeout(":", timeout=10)  # Timeout after 5 seconds
-        if _input:
-            # user_input += "<character name=user><question>" + _input + "</question></character>"
+        try:
+            _input = input(": ")
+            if _input.lower() == "exit":
+                print("Exiting chat.")
+                break
+
+            if _input.strip() == "":
+                print("Input cannot be empty. Please try again.")
+                continue
+
+            # Combine the input and previous conversation context
             user_input += _input + " __eou__"
-        else:
-            user_input += generate_random_chars() + "?"
+
+            # Generate response from the model
+            response = generate_response(model, user_input, max_new_tokens=256)
+            print(f"Model: {response}")
+
+            # Update the context
+            user_input += response + "\n"
+
+        except TimeoutError:
+            print("No input detected for a while. Auto-response generated.")
+            response = generate_response(model, "No input detected.")
+            print(f"Model: {response}")
+            continue
+
+def chat_loop2(model):
+    user_input = ""
+    print("Enter your queries. Type 'exit' to quit.")
+    
+    while True:
+        _input = input(": ")
+        if _input.lower() == "exit":
+            print("Exiting chat.")
+            break
+
+        # Append new user input to conversation history
+        user_input += f"User: {_input} __eou__"
+
+        # Trim the conversation history to avoid excessive context
+        user_input = trim_conversation_history(user_input)
+
+        # Generate response from model
         response = generate_response(model, user_input, max_new_tokens=256)
-        print(response)
-        user_input += response + "\n"
+
+        # Print model response
+        print(f"Model: {response}")
+
+        # Append model response to conversation history
+        user_input += f"Model: {response} __eou__"
+
+def chat_loop3(model):
+    conversation_history = ""  # Keep a concise conversation history
+    user_input_end = 0
+    print("Enter your queries. Type '__exit__' to quit.")
+    
+    while True:
+        _input = input("user: ")
+        if _input.lower() == "__exit__":
+            print("Exiting chat.")
+            break
+
+        # Append new user input to conversation history
+        conversation_history += f"User: {_input} __eou__"
+
+        user_input_length = len(f"User: {_input}")
+
+        # Optionally limit the length of the conversation history if needed
+        conversation_history = conversation_history[-1000:]  # Adjust this limit based on model capacity
+
+        # Generate response from model
+        response = generate_response(model, conversation_history, max_new_tokens=256)
+
+        # Print model response
+        #print(f"raw {response}")
+        print(f"Model: {response[user_input_length:]}")
+
+        # Append model response to conversation history
+        conversation_history += f"Model: {response} __eou__"
 
 
-else:
-    # generate from the model
-    context = torch.zeros((1, 1), dtype=torch.long, device=device)
-    print(decode(model.generate(context, max_new_tokens=500)[0].tolist()))
-    # open('more.txt', 'w').write(decode(m.generate(context, max_new_tokens=10000)[0].tolist()))
+if for_chat:
+    chat_loop3(model=model)
