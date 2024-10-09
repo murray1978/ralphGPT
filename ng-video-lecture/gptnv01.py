@@ -26,8 +26,6 @@ import signal
 from TrainingTimer import TrainingTimer
 import time
 
-import matplotlib.pyplot as plt
-
 import json
 
 from tokeniser import Tokenizer
@@ -44,22 +42,22 @@ torch.cuda.set_per_process_memory_fraction(0.8, 0)
 torch.cuda.memory.set_per_process_memory_fraction(0.9)
 
 # hyperparameters
-batch_size = 48 # 64 how many independent sequences will we process in parallel? '48 works'
+batch_size = 64 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 8000
-eval_interval = 400
-min_val_loss = .90  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
+max_iters = 50000
+eval_interval = 100
+min_val_loss = 0.90  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
 loss_separation = 0.3  # difference between val loss and train loss
 
 # variable learning rate
 learning_rate_fine = 0.9e-5 # 1e-5 
 learning_rate = 2e-4  # 3e-4
 
-# Transformer parameters
+# Transformer parameters, effects as in size, saving.
 eval_iters = 100  # does not effect model
 n_embd = 256  # effects model '256 works'
-n_head = 10 # 6 effects model '10 works'
-n_layer = 10  # 6 effects model '10 works'
+n_head = 12 # 6 effects model '10 works'
+n_layer = 12  # 6 effects model '10 works'
 dropout = 0.25  # does not effect model
 # ------------
 
@@ -91,7 +89,7 @@ datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
 # model files
 model_path = "models/"
 model_ext = ".pth"
-model_filename = "gptnv2"
+model_filename = "gptnv2a"
 model_file = model_path + model_filename + model_ext
 save_file = model_path + model_filename + "" + model_ext
 # parameter file
@@ -226,6 +224,11 @@ def estimate_loss():
         for k in range(eval_iters):
             X, Y = get_batch(split, data)
             logits, loss = model(X, Y)
+
+            #handle multiple GPUS
+            if torch.cuda.device_count() > 1:
+                loss = loss.mean()
+
             losses[k] = loss.item()
         out[split] = losses.mean()
     model.train()
@@ -283,6 +286,7 @@ class FeedFoward(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4 * n_embd),
+            # Another activation function to try is GELU
             nn.LeakyReLU(negative_slope=negative_slope),
             nn.Linear(4 * n_embd, n_embd),
             nn.Dropout(dropout),
@@ -540,10 +544,16 @@ def generate_response(_model, _query, max_new_tokens=60):
     _model.eval()
     input_ids = torch.tensor(encode(_query), dtype=torch.long).unsqueeze(0).to(device)
 
-    if with_memory:
-        output_ids = _model.generate_compressed(input_ids, max_new_tokens=max_new_tokens)
+    if torch.cuda.device_count() > 1 :
+        if with_memory:
+            output_ids = _model.module.generate_compressed(input_ids, max_new_tokens=max_new_tokens)
+        else:
+            output_ids = _model.module.generate_nv(input_ids, max_new_tokens=max_new_tokens, stop_token=tokenizer.getToken('__eou__'))
     else:
-        output_ids = _model.generate_nv(input_ids, max_new_tokens=max_new_tokens, stop_token=tokenizer.getToken('__eou__'))
+        if with_memory:
+            output_ids = _model.generate_compressed(input_ids, max_new_tokens=max_new_tokens)
+        else:
+            output_ids = _model.generate_nv(input_ids, max_new_tokens=max_new_tokens, stop_token=tokenizer.getToken('__eou__'))
 
     # Get the token ID for "__eou__"
     eou_token_id = tokenizer.getToken('__eou__')
@@ -584,6 +594,9 @@ def input_with_timeout(prompt, timeout):
 
 
 model = GPTLanguageModel(max_memory_size=large_memory_size)
+if torch.cuda.device_count() > 1:
+    print(f"Using {torch.cuda.device_count()} GPU's")
+    model = nn.DataParallel(model)
 
 if os.path.exists(model_file):
     print(f'Using {model_file} ')
@@ -662,6 +675,10 @@ for iter in range(max_iters):
         # xb = xb.requires_grad_(True)
         # yb = yb.requires_grad_(True)
         logits, loss = model(xb, yb)
+
+    if torch.cuda.device_count() > 1:
+        if loss.dim() > 0:
+            loss = loss.mean()
 
     scaler.scale(loss).backward()
     scaler.step(optimizer)
