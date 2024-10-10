@@ -44,7 +44,7 @@ torch.cuda.memory.set_per_process_memory_fraction(0.9)
 # hyperparameters
 batch_size = 64 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 50000
+max_iters = 1000
 eval_interval = 100
 min_val_loss = 0.90  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
 loss_separation = 0.3  # difference between val loss and train loss
@@ -89,7 +89,7 @@ datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
 # model files
 model_path = "models/"
 model_ext = ".pth"
-model_filename = "gptnv2a"
+model_filename = "gptnv2affine"
 model_file = model_path + model_filename + model_ext
 save_file = model_path + model_filename + "" + model_ext
 # parameter file
@@ -204,15 +204,63 @@ if not for_chat: # do not need to set up a dataset if in chat
     val_data = data[n:]
 
 
-# data loading
-def get_batch(split, _data):
+# data loading, relies on train_data and val_data setup outside of function
+def get_batch(split):
     # generate a small batch of data of inputs x and targets y
     _data = train_data if split == 'train' else val_data
     ix = torch.randint(len(_data) - block_size, (batch_size,))
-    x = torch.stack([data[i:i+block_size] for i in ix])
-    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
+    x = torch.stack([_data[i:i+block_size] for i in ix])
+    y = torch.stack([_data[i+1:i+block_size+1] for i in ix])
     x, y = x.to(device), y.to(device)
     return x, y
+
+def get_train_pair(split, eou_token_id):
+    _data = train_data if split == 'train' else val_data
+    _data = _data.to(device)
+    
+    # Ensure eou_token_id is a scalar (not a list)
+    if isinstance(eou_token_id, list):
+        eou_token_id = eou_token_id[0]
+    
+    # Perform the comparison and check if eou_token_id exists in _data
+    comparison = _data == eou_token_id
+    eou_indices = comparison.nonzero(as_tuple=True)[0]
+    
+    # Split tokenized data into sentences
+    sentences = []
+    prev_idx = 0
+    for idx in eou_indices:
+        sentence = _data[prev_idx:idx + 1]  # Include the __eou__ token
+        sentences.append(sentence)
+        prev_idx = idx + 1
+    
+    # Ensure each sentence has the same length (block_size)
+    def pad_or_trim(sequence, length):
+        if len(sequence) > length:
+            return sequence[:length]  # Trim if too long
+        elif len(sequence) < length:
+            padding = torch.zeros(length - len(sequence), dtype=torch.long, device=sequence.device)
+            return torch.cat([sequence, padding])  # Pad if too short
+        return sequence
+
+    # Collect input-output pairs from the sentences
+    pairs = []
+    for i in range(0, len(sentences) - 1, 2):
+        x = pad_or_trim(sentences[i], block_size)   # Ensure x is block_size long
+        y = pad_or_trim(sentences[i + 1], block_size)  # Ensure y is block_size long
+        pairs.append((x, y))  # Add the (x, y) pairs to the list
+
+    # Ensure x and y have a batch dimension (if not, use unsqueeze(0))
+    x, y = pairs[0]
+    x = x.unsqueeze(0)  # Add batch dimension
+    y = y.unsqueeze(0)  # Add batch dimension
+
+    # Move x and y tensors to the device
+    x = x.to(device)
+    y = y.to(device)
+
+    return x, y
+
 
 
 @torch.no_grad()
@@ -222,7 +270,7 @@ def estimate_loss():
     for split in ['train', 'val']:
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
-            X, Y = get_batch(split, data)
+            X, Y = get_batch(split)
             logits, loss = model(X, Y)
 
             #handle multiple GPUS
@@ -614,10 +662,6 @@ print(sum(p.numel() for p in model.parameters())/1e6, 'M parameters')
 
 scaler = GradScaler()
 
-training_loss = []
-validation_loss = []
-iteration_times = []
-
 start_time = time.time()
 
 
@@ -625,68 +669,132 @@ start_time = time.time()
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.8, patience=20)
 timer = TrainingTimer( max_iters, eval_iters)
 
-for iter in range(max_iters):
-    iter_start_time = time.time()
+# train the from the dataset normally
+def train_normal():
 
-    if for_chat:
-        break
+    for iter in range(max_iters):
+        iter_start_time = time.time()
 
-    # every once in a while evaluate the loss on train and val sets
-    if iter % eval_interval == 0 or iter == max_iters - 1:
-        print("=" * 25)
-        losses = estimate_loss()
-
-        # print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
-        training_loss.append(losses['train'])
-        validation_loss.append(losses['val'])
-
-        if losses['val'] < min_val_loss:
-            print(f"Val loss {losses['val']} below {min_val_loss}, exit train loop")
+        if for_chat:
             break
 
-        separation = losses['val'] - losses['train']
-        if separation > loss_separation :
-            print(f"Loss Separation {separation} below {loss_separation}, exit train loop")
+        # every once in a while evaluate the loss on train and val sets
+        if iter % eval_interval == 0 or iter == max_iters - 1:
+            print("=" * 25)
+            losses = estimate_loss()
+
+            if losses['val'] < min_val_loss:
+                print(f"Val loss {losses['val']} below {min_val_loss}, exit train loop")
+                break
+
+            separation = losses['val'] - losses['train']
+            if separation > loss_separation :
+                print(f"Loss Separation {separation} below {loss_separation}, exit train loop")
+                break
+
+            scheduler.step(losses['val'])
+
+            # Calculate elapsed time per iteration
+            iter_end_time = time.time()
+            iteration_time = iter_end_time - iter_start_time
+
+            # Calculate and display the total elapsed time
+            total_elapsed_time = time.time() - start_time
+            print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}, elapsed time = {total_elapsed_time:.2f}s")
+
+            # Update and get remaining time estimate
+            remaining_time = timer.update()
+            print(f"Estimated time remaining: {timer.format_time(remaining_time)}")
+
+
+        # sample a batch of data
+        xb, yb = get_batch('train')
+
+        optimizer.zero_grad(set_to_none=True)
+
+        # evaluate the loss
+        with autocast():
+            # xb = xb.requires_grad_(True)
+            # yb = yb.requires_grad_(True)
+            logits, loss = model(xb, yb)
+
+        if torch.cuda.device_count() > 1:
+            if loss.dim() > 0:
+                loss = loss.mean()
+
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+
+        torch.cuda.empty_cache()
+        gc.collect()
+
+def train_fine_tune():
+    for iter in range(max_iters):
+        iter_start_time = time.time()
+
+        if for_chat:
             break
 
-        scheduler.step(losses['val'])
+        # every once in a while evaluate the loss on train and val sets
+        if iter % eval_interval == 0 or iter == max_iters - 1:
+            print("=" * 25)
+            losses = estimate_loss()
 
-        # Calculate elapsed time per iteration
-        iter_end_time = time.time()
-        iteration_time = iter_end_time - iter_start_time
-        iteration_times.append(iteration_time)
+            if losses['val'] < min_val_loss:
+                print(f"Val loss {losses['val']} below {min_val_loss}, exit train loop")
+                break
 
-        # Calculate and display the total elapsed time
-        total_elapsed_time = time.time() - start_time
-        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}, elapsed time = {total_elapsed_time:.2f}s")
+            separation = losses['val'] - losses['train']
+            if separation > loss_separation :
+                print(f"Loss Separation {separation} below {loss_separation}, exit train loop")
+                break
 
-        # Update and get remaining time estimate
-        remaining_time = timer.update()
-        print(f"Estimated time remaining: {timer.format_time(remaining_time)}")
+            scheduler.step(losses['val'])
+
+            # Calculate elapsed time per iteration
+            iter_end_time = time.time()
+            iteration_time = iter_end_time - iter_start_time
+
+            # Calculate and display the total elapsed time
+            total_elapsed_time = time.time() - start_time
+            print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}, elapsed time = {total_elapsed_time:.2f}s")
+
+            # Update and get remaining time estimate
+            remaining_time = timer.update()
+            print(f"Estimated time remaining: {timer.format_time(remaining_time)}")
 
 
-    # sample a batch of data
-    xb, yb = get_batch('train', data)
+        # sample a batch of data
+        # xb, yb = get_batch('train', data)
+        eou_token_id = encode('__eou__')
+        xb, yb = get_train_pair('train', eou_token_id)
 
-    optimizer.zero_grad(set_to_none=True)
+        optimizer.zero_grad(set_to_none=True)
 
-    # evaluate the loss
-    with autocast():
-        # xb = xb.requires_grad_(True)
-        # yb = yb.requires_grad_(True)
-        logits, loss = model(xb, yb)
+        # evaluate the loss
+        with autocast():
+            # xb = xb.requires_grad_(True)
+            # yb = yb.requires_grad_(True)
+            logits, loss = model(xb, yb)
 
-    if torch.cuda.device_count() > 1:
-        if loss.dim() > 0:
-            loss = loss.mean()
+        if torch.cuda.device_count() > 1:
+            if loss.dim() > 0:
+                loss = loss.mean()
 
-    scaler.scale(loss).backward()
-    scaler.step(optimizer)
-    scaler.update()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
-    torch.cuda.empty_cache()
-    gc.collect()
+        torch.cuda.empty_cache()
+        gc.collect()
 
+if fine_tune:
+    print("training fine tune")
+    train_fine_tune()
+else:
+    print("Training base data")
+    train_normal()
 
 if not for_chat:
     print(f"Saving {save_file}")
@@ -711,7 +819,8 @@ def trim_conversation_history(conversation, max_length=MAX_HISTORY_TOKENS):
     return conversation
 
 
-# Not happy with original chat, chatGPT 4o helped with the new one.
+# Not happy with original chat, chatGPT 4o helped with the new one, still not good with
+# printing last two parts of the conversation.
 def chat_loop(model):
     user_input = ""
     print("Enter your queries. Type 'exit' to quit.")
