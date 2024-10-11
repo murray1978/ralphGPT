@@ -42,11 +42,11 @@ torch.cuda.set_per_process_memory_fraction(0.8, 0)
 torch.cuda.memory.set_per_process_memory_fraction(0.9)
 
 # hyperparameters
-batch_size = 64 # 64 how many independent sequences will we process in parallel? '48 works'
+batch_size = 48 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 1000
+max_iters = 5000
 eval_interval = 100
-min_val_loss = 0.90  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
+min_val_loss = 2.0  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
 loss_separation = 0.3  # difference between val loss and train loss
 
 # variable learning rate
@@ -55,7 +55,7 @@ learning_rate = 2e-4  # 3e-4
 
 # Transformer parameters, effects as in size, saving.
 eval_iters = 100  # does not effect model
-n_embd = 256  # effects model '256 works'
+n_embd = 512  # effects model '256 works'
 n_head = 12 # 6 effects model '10 works'
 n_layer = 12  # 6 effects model '10 works'
 dropout = 0.25  # does not effect model
@@ -89,7 +89,7 @@ datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
 # model files
 model_path = "models/"
 model_ext = ".pth"
-model_filename = "gptnv2affine"
+model_filename = "gptnv2afine2"
 model_file = model_path + model_filename + model_ext
 save_file = model_path + model_filename + "" + model_ext
 # parameter file
@@ -197,11 +197,37 @@ vocab_size = tokenizer.get_vocab_size()
 
 if not for_chat: # do not need to set up a dataset if in chat
     print("preping dataset")
-    # Train and test splits
-    data = torch.tensor(encode(text), dtype=torch.long)
-    n = int(0.9*len(data)) # first 90% will be train, rest val
-    train_data = data[:n]
-    val_data = data[n:]
+    if  not fine_tune:
+        # Train and test splits
+        data = torch.tensor(encode(text), dtype=torch.long)
+        n = int(0.9*len(data)) # first 90% will be train, rest val
+        train_data = data[:n]
+        val_data = data[n:]
+        #return train_data, val_data
+    else:
+        data = torch.tensor(encode(text), dtype=torch.long)
+        # print(f'data {data}')
+        n = int(0.9*len(data))
+        # Ensure n is even and a multiple of 2
+        if n % 2 != 0:
+            n -= 1  # If n is odd, subtract 1 to make it even
+        # print(n)
+
+        train_data = data[:n]
+        val_data = data[n:]
+        #return train_data, val_data
+
+
+def print_tensor_size(tensor, tensor_name):
+    num_elements = tensor.numel()  # Total number of elements in the tensor
+    dtype_size = tensor.element_size()  # Size of each element in bytes (e.g., 4 bytes for float32)
+    memory_usage = num_elements * dtype_size  # Total memory usage in bytes
+    
+    # Convert to more readable format (KB, MB, GB)
+    memory_usage_kb = memory_usage / 1024
+    memory_usage_mb = memory_usage_kb / 1024
+    
+    print(f"Memory usage of {tensor_name}: {memory_usage_mb:.2f} MB ({memory_usage_kb:.2f} KB)")
 
 
 # data loading, relies on train_data and val_data setup outside of function
@@ -211,54 +237,142 @@ def get_batch(split):
     ix = torch.randint(len(_data) - block_size, (batch_size,))
     x = torch.stack([_data[i:i+block_size] for i in ix])
     y = torch.stack([_data[i+1:i+block_size+1] for i in ix])
+
+    # Print memory usage before moving to GPU
+    # print_tensor_size(x, 'x (input)')
+    # print_tensor_size(y, 'y (output)')
+
     x, y = x.to(device), y.to(device)
     return x, y
 
-def get_train_pair(split, eou_token_id):
+def pad_or_trim(sequence, length):
+    if len(sequence) > length:
+        return sequence[:length]  # Trim if too long
+    elif len(sequence) < length:
+        # Pad with zeros if too short
+        padding = torch.zeros(length - len(sequence), dtype=torch.long, device=sequence.device)
+        return torch.cat([sequence, padding])
+    return sequence
+
+def get_train_pair_with_memory_limit(split, eou_token_id, memory_limit_kb=8):
+    """
+    Generates a small batch of input-output pairs for training, 
+    ensuring that the memory usage of the batch does not exceed the given limit.
+    """
+    # Calculate memory usage per token (long type = 8 bytes)
+    token_size_bytes = torch.tensor(0, dtype=torch.long).element_size()  # Should be 8 bytes for long type
+
+    # Use the global variables train_data or val_data depending on the split
     _data = train_data if split == 'train' else val_data
-    _data = _data.to(device)
+    
+    if isinstance(eou_token_id, list):
+        eou_token_id = eou_token_id[0]
+    
+    # Find the indices where the __eou__ token appears (marks end of a sentence)
+    eou_indices = (_data == eou_token_id).nonzero(as_tuple=True)[0]
+    
+    # Initialize lists for input and target (user and bot) sentences
+    input_sentences = []
+    target_sentences = []
+    prev_idx = 0
+    batch_memory_usage = 0
+
+    # Dynamic block size, starting at a high value and adjusting based on memory
+    block_size = 64
+    
+    # Iterate over the indices and create user-bot pairs
+    for idx in range(0, len(eou_indices) - 1, 2):
+        user_sentence = _data[prev_idx:eou_indices[idx] + 1]  # User input
+        bot_sentence = _data[eou_indices[idx] + 1:eou_indices[idx + 1] + 1]  # Bot response
+        
+        # Ensure both sentences are padded/truncated to block_size
+        user_sentence = pad_or_trim(user_sentence, block_size)
+        bot_sentence = pad_or_trim(bot_sentence, block_size)
+
+        # Calculate the memory usage of the current batch
+        current_memory_usage = (user_sentence.numel() + bot_sentence.numel()) * token_size_bytes
+        
+        # Check if adding this pair would exceed the memory limit
+        if batch_memory_usage + current_memory_usage > memory_limit_kb * 1024:
+            # Stop adding more pairs if memory limit is exceeded
+            break
+
+        input_sentences.append(user_sentence)
+        target_sentences.append(bot_sentence)
+        
+        # Update batch memory usage
+        batch_memory_usage += current_memory_usage
+
+        prev_idx = eou_indices[idx + 1] + 1  # Move to next pair
+    
+    # Stack the sentences into tensors for batch processing
+    x = torch.stack(input_sentences)  # Inputs (user sentences)
+    y = torch.stack(target_sentences)  # Targets (bot sentences)
+    
+    # Print the final memory usage
+    print(f"Total batch memory usage: {batch_memory_usage / 1024:.2f} KB")
+    
+    # Move tensors to the device
+    x, y = x.to(device), y.to(device)
+    
+    return x, y
+
+"""
+ This is chatGPT 4o's, third atempt, this is not the result of 
+ chatGPT getting it wrong but a miss understanding in what the end
+ user thought they specified and what the programmer thinks
+ the end user has specified.
+"""
+def get_train_pair(split, eou_token_id):
+    _block_size = 0
+    """
+    Generates a small batch of input-output pairs for training, 
+    based on user-bot sentence pairs separated by __eou__ (end of utterance).
+    """
+    # Use the global variables train_data or val_data depending on the split
+    _data = train_data if split == 'train' else val_data
+    
+    # Move data to the GPU early to avoid CPU overhead,
+    # had ro 
+    # _data = _data.to(device)
     
     # Ensure eou_token_id is a scalar (not a list)
     if isinstance(eou_token_id, list):
         eou_token_id = eou_token_id[0]
     
-    # Perform the comparison and check if eou_token_id exists in _data
-    comparison = _data == eou_token_id
-    eou_indices = comparison.nonzero(as_tuple=True)[0]
+    # Find the indices where the __eou__ token appears (marks end of a sentence)
+    eou_indices = (_data == eou_token_id).nonzero(as_tuple=True)[0]
     
-    # Split tokenized data into sentences
-    sentences = []
+    # Split the data into user and bot sentences based on __eou__ token positions
+    input_sentences = []
+    target_sentences = []
     prev_idx = 0
-    for idx in eou_indices:
-        sentence = _data[prev_idx:idx + 1]  # Include the __eou__ token
-        sentences.append(sentence)
-        prev_idx = idx + 1
     
-    # Ensure each sentence has the same length (block_size)
-    def pad_or_trim(sequence, length):
-        if len(sequence) > length:
-            return sequence[:length]  # Trim if too long
-        elif len(sequence) < length:
-            padding = torch.zeros(length - len(sequence), dtype=torch.long, device=sequence.device)
-            return torch.cat([sequence, padding])  # Pad if too short
-        return sequence
+    # Iterate over the end-of-utterance indices and create user-bot pairs
+    for idx in range(0, len(eou_indices) - 1, 2):  # Skip every other for user-bot pairs
+        user_sentence = _data[prev_idx:eou_indices[idx] + 1]  # User input
+        bot_sentence = _data[eou_indices[idx] + 1:eou_indices[idx + 1] + 1]  # Bot response
+        
+        # Ensure both sentences are padded/truncated to block_size
+        user_sentence = pad_or_trim(user_sentence, _block_size)
+        bot_sentence = pad_or_trim(bot_sentence, _block_size)
+        
+        input_sentences.append(user_sentence)
+        target_sentences.append(bot_sentence)
+        
+        prev_idx = eou_indices[idx + 1] + 1  # Move to next pair
+    
+    # Stack the sentences into tensors for batch processing
+    x = torch.stack(input_sentences)  # Inputs (user sentences)
+    y = torch.stack(target_sentences)  # Targets (bot sentences)
+    
+    # Print memory usage before moving to GPU
+    # print_tensor_size(x, 'x (input)')
+    # print_tensor_size(y, 'y (output)')
 
-    # Collect input-output pairs from the sentences
-    pairs = []
-    for i in range(0, len(sentences) - 1, 2):
-        x = pad_or_trim(sentences[i], block_size)   # Ensure x is block_size long
-        y = pad_or_trim(sentences[i + 1], block_size)  # Ensure y is block_size long
-        pairs.append((x, y))  # Add the (x, y) pairs to the list
-
-    # Ensure x and y have a batch dimension (if not, use unsqueeze(0))
-    x, y = pairs[0]
-    x = x.unsqueeze(0)  # Add batch dimension
-    y = y.unsqueeze(0)  # Add batch dimension
-
-    # Move x and y tensors to the device
-    x = x.to(device)
-    y = y.to(device)
-
+    # Move tensors to the device
+    x, y = x.to(device), y.to(device)
+    
     return x, y
 
 
@@ -288,9 +402,9 @@ class Head(nn.Module):
 
     def __init__(self, head_size):
         super().__init__()
-        self.key = nn.Linear(n_embd, head_size, bias=False)
-        self.query = nn.Linear(n_embd, head_size, bias=False)
-        self.value = nn.Linear(n_embd, head_size, bias=False)
+        self.key = nn.Linear(n_embd, head_size, bias=False) # B
+        self.query = nn.Linear(n_embd, head_size, bias=False) # T
+        self.value = nn.Linear(n_embd, head_size, bias=False) # C
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
 
         self.dropout = nn.Dropout(dropout)
@@ -334,8 +448,10 @@ class FeedFoward(nn.Module):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4 * n_embd),
-            # Another activation function to try is GELU
+            # Leaky relu, helps prevent dead neurons.
             nn.LeakyReLU(negative_slope=negative_slope),
+            #GELU, to slow for my liking
+            # nn.GELU(),
             nn.Linear(4 * n_embd, n_embd),
             nn.Dropout(dropout),
         )
@@ -768,7 +884,7 @@ def train_fine_tune():
         # sample a batch of data
         # xb, yb = get_batch('train', data)
         eou_token_id = encode('__eou__')
-        xb, yb = get_train_pair('train', eou_token_id)
+        xb, yb = get_train_pair_with_memory_limit('train', eou_token_id)
 
         optimizer.zero_grad(set_to_none=True)
 
