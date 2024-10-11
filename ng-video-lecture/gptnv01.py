@@ -254,7 +254,7 @@ def pad_or_trim(sequence, length):
         return torch.cat([sequence, padding])
     return sequence
 
-def get_train_pair_with_memory_limit(split, eou_token_id, memory_limit_kb=8):
+def get_train_pair_with_memory_limit(split, eou_token_id, memory_limit_kb=16):
     """
     Generates a small batch of input-output pairs for training, 
     ensuring that the memory usage of the batch does not exceed the given limit.
@@ -310,7 +310,7 @@ def get_train_pair_with_memory_limit(split, eou_token_id, memory_limit_kb=8):
     y = torch.stack(target_sentences)  # Targets (bot sentences)
     
     # Print the final memory usage
-    print(f"Total batch memory usage: {batch_memory_usage / 1024:.2f} KB")
+    # print(f"Total batch memory usage: {batch_memory_usage / 1024:.2f} KB")
     
     # Move tensors to the device
     x, y = x.to(device), y.to(device)
