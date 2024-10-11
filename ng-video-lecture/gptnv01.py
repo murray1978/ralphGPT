@@ -46,7 +46,7 @@ batch_size = 48 # 64 how many independent sequences will we process in parallel?
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
 max_iters = 5000
 eval_interval = 100
-min_val_loss = 2.0  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
+min_val_loss = 1.8  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
 loss_separation = 0.3  # difference between val loss and train loss
 
 # variable learning rate
