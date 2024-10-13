@@ -42,9 +42,10 @@ class Tokenizer:
     def decode(self, data):
         return ''.join([self.itos[i] for i in data])
 
-    def append_special(self, _token):
+    def append_special(self, _token, verbose=False):
         if self.tokens_special.count(_token) == 0:
-            print(f"appending {_token}")
+            if verbose:
+                print(f"appending {_token}")
             self.tokens_special.append(_token)
             self.chars = sorted(list(
             set(self.tokens_alpha)

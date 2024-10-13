@@ -46,12 +46,12 @@ batch_size = 48 # 64 how many independent sequences will we process in parallel?
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
 max_iters = 5000
 eval_interval = 100
-min_val_loss = 1.8  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
-loss_separation = 0.3  # difference between val loss and train loss
+min_val_loss = 0.8  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
+loss_separation = 5.3  # difference between val loss and train loss
 
 # variable learning rate
-learning_rate_fine = 0.9e-5 # 1e-5 
-learning_rate = 2e-4  # 3e-4
+learning_rate_fine = 1e-5 # 1e-5 
+learning_rate = 3e-4  # 3e-4
 
 # Transformer parameters, effects as in size, saving.
 eval_iters = 100  # does not effect model
@@ -91,7 +91,7 @@ model_path = "models/"
 model_ext = ".pth"
 model_filename = "gptnv2afine2"
 model_file = model_path + model_filename + model_ext
-save_file = model_path + model_filename + "" + model_ext
+save_file = model_path + model_filename + "a" + model_ext
 # parameter file
 param_file = model_path + model_filename + ".json"
 
@@ -137,6 +137,7 @@ def select_mode():
         print("Training mode selected.")
     elif choice == '2':
         _fine_tune = True
+        dropout = 0.35      # Ok probably not the best place for it here
         print("Fine-Tuning mode selected.")
     elif choice == '3':
         _for_chat = True
@@ -160,7 +161,9 @@ torch.manual_seed(1337)
 
 # Open up the inputfile for the tokenizer
 with open(datafile, 'r', encoding='utf-8') as f:
-    text = f.read()                          
+    text = f.read()
+
+text = text.replace('\n','')     
 
 # Change to the tokenizer
 # Additional Characters not found in the text
@@ -195,28 +198,82 @@ encode = tokenizer.encode
 decode = tokenizer.decode
 vocab_size = tokenizer.get_vocab_size()
 
-if not for_chat: # do not need to set up a dataset if in chat
-    print("preping dataset")
-    if  not fine_tune:
-        # Train and test splits
-        data = torch.tensor(encode(text), dtype=torch.long)
-        n = int(0.9*len(data)) # first 90% will be train, rest val
-        train_data = data[:n]
-        val_data = data[n:]
-        #return train_data, val_data
-    else:
-        data = torch.tensor(encode(text), dtype=torch.long)
-        # print(f'data {data}')
-        n = int(0.9*len(data))
-        # Ensure n is even and a multiple of 2
-        if n % 2 != 0:
-            n -= 1  # If n is odd, subtract 1 to make it even
-        # print(n)
+def split_data_old(text):
+    if not for_chat: # do not need to set up a dataset if in chat
+        print("preping dataset")
+        if  not fine_tune:
+            print("\t base dataset")
+            # Train and test splits
+            data = torch.tensor(encode(text), dtype=torch.long)
+            n = int(0.9*len(data)) # first 90% will be train, rest val
+            train_data = data[:n]
+            val_data = data[n:]
+            return train_data, val_data
+        else:
+            print("\t fine dataset")
+            data = torch.tensor(encode(text), dtype=torch.long)
+            # print(f'data {data}')
+            n = int(0.9*len(data))
+            # Ensure n is even and a multiple of 2
+            if n % 2 != 0:
+                n -= 1  # If n is odd, subtract 1 to make it even
+            # print(n)
 
-        train_data = data[:n]
-        val_data = data[n:]
-        #return train_data, val_data
+            train_data = data[:n]
+            val_data = data[n:]
+            return train_data, val_data
+        
 
+def split_data(text, eou_token_id):
+    if not for_chat:  # Do not need to set up a dataset if in chat
+        print("Preparing dataset")
+
+        # Tokenize the text
+        data = torch.tensor(encode(text), dtype=torch.long)
+
+        # Base dataset handling (no special treatment)
+        if not fine_tune:
+            print("\tBase dataset")
+            n = int(0.9 * len(data))  # First 90% will be train, rest val
+            train_data = data[:n]
+            val_data = data[n:]
+            return train_data, val_data
+
+        # Fine-tune dataset handling (aligning with __eou__ tokens)
+        else:
+            print("\tFine-tune dataset")
+
+            # Ensure eou_token_id is a scalar (not a list)
+            if isinstance(eou_token_id, list):
+                eou_token_id = eou_token_id[0]
+
+            # Find indices where the __eou__ token appears
+            eou_indices = (data == eou_token_id).nonzero(as_tuple=True)[0]
+
+            # Split at the last complete conversation (aligned with __eou__)
+            split_idx = int(0.9 * len(eou_indices))  # First 90% of conversations
+            last_eou_idx = eou_indices[split_idx] + 1
+
+            # Ensure that the split is even and aligned with sentence boundaries
+            if last_eou_idx % 2 != 0:
+                last_eou_idx -= 1  # Adjust to keep the split even
+
+            # Create train and validation sets
+            train_data = data[:last_eou_idx + 1]
+            val_data = data[last_eou_idx + 1:]
+
+            # Decode and print the train and validation sets
+            """
+            print("train_data:", decode(train_data.tolist()))
+            print("="*50)
+            print("val_data:", decode(val_data.tolist()))
+            print("="*50)
+            """
+            return train_data, val_data
+
+        
+if not for_chat:
+    train_data, val_data = split_data(text=text, eou_token_id=encode('__eou__'))
 
 def print_tensor_size(tensor, tensor_name):
     num_elements = tensor.numel()  # Total number of elements in the tensor
@@ -254,6 +311,10 @@ def pad_or_trim(sequence, length):
         return torch.cat([sequence, padding])
     return sequence
 
+"""
+    Data loading for fine tuning, this part of the training program is causing issues due to
+    train/validate pair's being duplicated.
+"""
 def get_train_pair_with_memory_limit(split, eou_token_id, memory_limit_kb=16):
     """
     Generates a small batch of input-output pairs for training, 
@@ -384,7 +445,10 @@ def estimate_loss():
     for split in ['train', 'val']:
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
-            X, Y = get_batch(split)
+            if train_only:
+                X, Y = get_batch(split)
+            else:
+                X, Y = get_train_pair_with_memory_limit(split=split, eou_token_id=encode('__eou__'))
             logits, loss = model(X, Y)
 
             #handle multiple GPUS
@@ -767,7 +831,6 @@ if os.path.exists(model_file):
     model.load_state_dict(torch.load(model_file))
     # create a PyTorch optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate_fine)
-    fine_tune = True
 else:
     # create a PyTorch optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
