@@ -549,20 +549,6 @@ def estimate_loss():
     model.train()
     return out
 
-def freeze_layers(model, num_layers_to_frezze):
-    # freeze embedding layer and first num_lauers_to_freeze transformer blocks
-    for param in model.token_embedding_table.parameters():
-        param.requires_grad = False # Freeze token embedding layer
-
-    for param in model.position_embadding_table.parameters():
-        param.requires_grad = False # Freeze position embedding layer
-    
-    # Freeze the first num_layers_to_freeze transformer blocks
-    for i, block in enumerate(model.blocks):
-        if i < num_layers_to_frezze:
-            for param in block.parameters():
-                param.requires_grad = False
-
 class Head(nn.Module):
     """ one head of self-attention """
 

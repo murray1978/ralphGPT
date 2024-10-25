@@ -510,7 +510,21 @@ def get_train_pair(split, eou_token_id):
     
     return x, y
 
+def freeze_layers(model, num_layers_to_frezze):
+    # freeze embedding layer and first num_lauers_to_freeze transformer blocks
+    for param in model.token_embedding_table.parameters():
+        param.requires_grad = False # Freeze token embedding layer
 
+    for param in model.position_embadding_table.parameters():
+        param.requires_grad = False # Freeze position embedding layer
+    
+    # Freeze the first num_layers_to_freeze transformer blocks
+    for i, block in enumerate(model.blocks):
+        if i < num_layers_to_frezze:
+            for param in block.parameters():
+                param.requires_grad = False
+
+    return model
 
 @torch.no_grad()
 def estimate_loss():
@@ -909,6 +923,11 @@ if os.path.exists(model_file):
 else:
     # create a PyTorch optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+
+if fine_tune:
+    model = freeze_layers(model=model, num_layers_to_frezze=6)
+    optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=learning_rate_fine)
+
 
 model = model.to(device)
 # print the number of parameters in the model
