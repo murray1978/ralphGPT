@@ -1,11 +1,9 @@
 # Compressive Transformer, from the paper COMPRESSIVE TRANSFORMERS FOR LONG-RANGE SEQUENCE MODELLING,
-# adapted from gptnv.py from comp_gpt.py from gpt_QA.py
+# adapted from gptnv01.py from comp_gpt.py from gpt_QA.py
 # using this as a learing and testbed GPT.
 # elapsed time incorrect, it's more like time accumulation.
-# 6/10/24 tidy up and add json for models/parameters
 #
-# Idea's
-#   Save the tokens with the model, include an unknown token
+# Change of tokenizer from char based to word/subword based
 import os
 import sys
 
@@ -28,11 +26,11 @@ import time
 
 import json
 
-from tokeniser import Tokenizer
+# from tokeniser import Tokenizer
+from tokenizers import Tokenizer
 
-
-tokenizer = Tokenizer()
-
+# tokenizer = Tokenizer()
+tokenizer = Tokenizer.from_file("custom_tokenizer.json")
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 for device in physical_devices:
@@ -43,23 +41,23 @@ torch.cuda.set_per_process_memory_fraction(0.8, 0)
 torch.cuda.memory.set_per_process_memory_fraction(0.9)
 
 # hyperparameters
-batch_size = 48 # 64 how many independent sequences will we process in parallel? '48 works'
+batch_size = 32 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 10000
+max_iters = 5000
 eval_interval = 100
 min_val_loss = 1.4  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
-loss_separation = 2.3  # difference between val loss and train loss
+loss_separation = 5.3  # difference between val loss and train loss
 
 # variable learning rate
-learning_rate_fine = 1e-4 # 1e-5 
+learning_rate_fine = 1e-5 # 1e-5 
 learning_rate = 3e-4  # 3e-4
 
 # Transformer parameters, effects as in size, saving.
 eval_iters = 100  # does not effect model
-n_embd = 256  # effects model '256 works'
-n_head = 12 # 6 effects model '10 works'
-n_layer = 12  # 6 effects model '10 works'
-dropout = 0.1  # does not effect model 0.25 'original'
+n_embd = 256 * 2   # effects model '256 works'
+n_head = 10 # 6 effects model '10 works'
+n_layer = 10  # 6 effects model '10 works'
+dropout = 0.25  # does not effect model 0.25 'original'
 # ------------
 
 with_memory = False
@@ -90,7 +88,7 @@ datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
 # model files
 model_path = "models/"
 model_ext = ".pth"
-model_filename = "gptnv2afine2b"
+model_filename = "ralphGPT"
 model_file = model_path + model_filename + model_ext
 save_file = model_path + model_filename + "" + model_ext
 # parameter file
@@ -135,10 +133,11 @@ def select_mode():
 
     if choice == '1':
         _train_only = True
+        dropout = 0.25
         print("Training mode selected.")
     elif choice == '2':
         _fine_tune = True
-        dropout = 0.35      # Ok probably not the best place for it here
+        dropout = 0.15      # Ok probably not the best place for it here
         print("Fine-Tuning mode selected.")
     elif choice == '3':
         _for_chat = True
@@ -180,6 +179,7 @@ text = text.replace('\n','')
 # encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
 # decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
 print("adding special tokens to tokenizer")
+"""
 tokenizer.append_special("__eou__")
 tokenizer.append_special("。")
 tokenizer.append_special('~')
@@ -193,37 +193,20 @@ tokenizer.append_special('“')
 tokenizer.append_special('”')
 tokenizer.append_special('\x7f')
 tokenizer.append_special('、')  # at this point we should be modifiying tokenaizer.
+"""
 
 # create a reference to the encoder and decoder
-encode = tokenizer.encode
-decode = tokenizer.decode
+# encode = tokenizer.encode
+# decode = tokenizer.decode
+def decode(text):
+    return tokenizer.decode(text)
+
+def encode(text_ids):
+    return tokenizer.encode(text_ids).ids
+
 vocab_size = tokenizer.get_vocab_size()
 
-def split_data_old(text):
-    if not for_chat: # do not need to set up a dataset if in chat
-        print("preping dataset")
-        if  not fine_tune:
-            print("\t base dataset")
-            # Train and test splits
-            data = torch.tensor(encode(text), dtype=torch.long)
-            n = int(0.9*len(data)) # first 90% will be train, rest val
-            train_data = data[:n]
-            val_data = data[n:]
-            return train_data, val_data
-        else:
-            print("\t fine dataset")
-            data = torch.tensor(encode(text), dtype=torch.long)
-            # print(f'data {data}')
-            n = int(0.9*len(data))
-            # Ensure n is even and a multiple of 2
-            if n % 2 != 0:
-                n -= 1  # If n is odd, subtract 1 to make it even
-            # print(n)
-
-            train_data = data[:n]
-            val_data = data[n:]
-            return train_data, val_data
-        
+print( decode(encode("Check of tokenizer __eou__")))
 
 def split_data(text, eou_token_id):
     if not for_chat:  # Do not need to set up a dataset if in chat
@@ -527,6 +510,8 @@ def get_train_pair(split, eou_token_id):
     
     return x, y
 
+
+
 @torch.no_grad()
 def estimate_loss():
     out = {}
@@ -549,19 +534,6 @@ def estimate_loss():
     model.train()
     return out
 
-def freeze_layers(model, num_layers_to_frezze):
-    # freeze embedding layer and first num_lauers_to_freeze transformer blocks
-    for param in model.token_embedding_table.parameters():
-        param.requires_grad = False # Freeze token embedding layer
-
-    for param in model.position_embadding_table.parameters():
-        param.requires_grad = False # Freeze position embedding layer
-    
-    # Freeze the first num_layers_to_freeze transformer blocks
-    for i, block in enumerate(model.blocks):
-        if i < num_layers_to_frezze:
-            for param in block.parameters():
-                param.requires_grad = False
 
 class Head(nn.Module):
     """ one head of self-attention """
@@ -772,7 +744,7 @@ class GPTLanguageModel(nn.Module):
 
     def generate(self, idx, max_new_tokens, stop_token=None):
         self.secondary_memory = None
-        stop_token = stop_token[-1]   #we should move this out of here.
+        # stop_token = stop_token[-1]   #we should move this out of here.
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -block_size:]
             logits, loss = self(idx_cond)
@@ -788,7 +760,7 @@ class GPTLanguageModel(nn.Module):
 
     def generate_nv(self, idx, max_new_tokens, stop_token=None, temperature=1.0, top_p=0.9):
         self.secondary_memory = None
-        stop_token = stop_token[-1]  # Move this outside if needed
+        # stop_token = stop_token[-1]  # Move this outside if needed
 
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -block_size:]
@@ -873,22 +845,23 @@ class GPTLanguageModel(nn.Module):
 def generate_response(_model, _query, max_new_tokens=60):
     _model.eval()
     input_ids = torch.tensor(encode(_query), dtype=torch.long).unsqueeze(0).to(device)
+    # Get the token ID for "__eou__"
+    #eou_token_id = tokenizer.getToken('__eou__')
+    eou_token_id = tokenizer.token_to_id('__eou__')
+    #eou_token_id = eou_token_id[-1]
 
     if torch.cuda.device_count() > 1 :
         if with_memory:
             output_ids = _model.module.generate_compressed(input_ids, max_new_tokens=max_new_tokens)
         else:
-            output_ids = _model.module.generate_nv(input_ids, max_new_tokens=max_new_tokens, stop_token=tokenizer.getToken('__eou__'))
+            output_ids = _model.module.generate_nv(input_ids, max_new_tokens=max_new_tokens, stop_token=eou_token_id)
     else:
         if with_memory:
             output_ids = _model.generate_compressed(input_ids, max_new_tokens=max_new_tokens)
         else:
-            output_ids = _model.generate_nv(input_ids, max_new_tokens=max_new_tokens, stop_token=tokenizer.getToken('__eou__'))
+            output_ids = _model.generate_nv(input_ids, max_new_tokens=max_new_tokens, stop_token=eou_token_id)
 
-    # Get the token ID for "__eou__"
-    eou_token_id = tokenizer.getToken('__eou__')
-    eou_token_id = eou_token_id[-1]
-    
+   
     # Check if output_ids is a tensor
     if isinstance(output_ids, torch.Tensor):
         output_ids = output_ids.tolist()  # Convert tensor to a list

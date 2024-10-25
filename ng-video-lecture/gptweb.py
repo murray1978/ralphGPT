@@ -24,10 +24,12 @@ import time
 
 import matplotlib.pyplot as plt
 
-from tokeniser import Tokenizer
+#from tokeniser import Tokenizer
+from tokenizers import Tokenizer
 from flask import Flask, request, jsonify
 
-tokenizer = Tokenizer()
+#tokenizer = Tokenizer()
+tokenizer = Tokenizer.from_file("custom_tokenizer.json")
 
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
@@ -39,7 +41,7 @@ torch.cuda.set_per_process_memory_fraction(0.8, 0)
 torch.cuda.memory.set_per_process_memory_fraction(0.9)
 
 # hyperparameters
-batch_size = 48 # 64 how many independent sequences will we process in parallel? '48 works'
+batch_size = 32 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
 max_iters = 8000
 eval_interval = 400
@@ -52,7 +54,7 @@ learning_rate = 2e-4  # 3e-4
 
 # Transformer parameters
 eval_iters = 100  # does not effect model
-n_embd = 256  # effects model '256 works'
+n_embd = 256 * 2 # effects model '256 works'
 n_head = 10 # 6 effects model '10 works'
 n_layer = 10  # 6 effects model '10 works'
 dropout = 0.25  # does not effect model
@@ -79,7 +81,7 @@ data_folder = "datasets/"
 datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
 # datafile = data_folder + "input-formatedFull.txt"
 model_folder = "models/"
-model_file = model_folder + "gptnv.pth"
+model_file = model_folder + "ralphGPT.pth"
 save_file = model_folder + "gptnv.pth"
 preprocessor_model = model_folder + "preprocessor_model.pth"
 
@@ -118,7 +120,7 @@ with open(datafile, 'r', encoding='utf-8') as f:
 # itos = {i: ch for i,ch in enumerate(chars)}
 # encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
 # decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
-tokenizer.append_special("__eou__")
+"""tokenizer.append_special("__eou__")
 tokenizer.append_special("。")
 tokenizer.append_special('~')
 tokenizer.append_special('‘')
@@ -131,9 +133,16 @@ tokenizer.append_special('“')
 tokenizer.append_special('”')
 tokenizer.append_special('\x7f')
 tokenizer.append_special('、')  # at this point we should be modifiying tokenaizer.
+"""
+#encode = tokenizer.encode
+#decode = tokenizer.decode
+def decode(text):
+    return tokenizer.decode(text)
 
-encode = tokenizer.encode
-decode = tokenizer.decode
+def encode(text_ids):
+    return tokenizer.encode(text_ids).ids
+    
+#vocab_size = tokenizer.get_vocab_size()
 vocab_size = tokenizer.get_vocab_size()
 
 class Head(nn.Module):
@@ -342,7 +351,7 @@ class GPTLanguageModel(nn.Module):
 
     def generate(self, idx, max_new_tokens, stop_token=None):
         self.secondary_memory = None
-        stop_token = stop_token[-1]   #we should move this out of here.
+        #stop_token = stop_token[-1]   #we should move this out of here.
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -block_size:]
             logits, loss = self(idx_cond)
@@ -386,15 +395,16 @@ class GPTLanguageModel(nn.Module):
 def generate_response(_model, _query, max_new_tokens=60):
     _model.eval()
     input_ids = torch.tensor(encode(_query), dtype=torch.long).unsqueeze(0).to(device)
+    eou_token_id = tokenizer.token_to_id('__eou__')
 
     if with_memory:
         output_ids = _model.generate_compressed(input_ids, max_new_tokens=max_new_tokens)
     else:
-        output_ids = _model.generate(input_ids, max_new_tokens=max_new_tokens, stop_token=tokenizer.getToken('__eou__'))
+        output_ids = _model.generate(input_ids, max_new_tokens=max_new_tokens, stop_token=eou_token_id)
 
     # Get the token ID for "__eou__"
-    eou_token_id = tokenizer.getToken('__eou__')
-    eou_token_id = eou_token_id[-1]
+    # eou_token_id = tokenizer.getToken('__eou__')
+    # eou_token_id = eou_token_id[-1]
     
     # Check if output_ids is a tensor
     if isinstance(output_ids, torch.Tensor):
@@ -411,7 +421,19 @@ model = GPTLanguageModel(max_memory_size=large_memory_size)
 
 if os.path.exists(model_file):
     print(f'Using {model_file} ')
-    model.load_state_dict(torch.load(model_file))
+    # model.load_state_dict(torch.load(model_file))
+    # Load the saved state_dict
+    state_dict = torch.load("models/ralphGPT.pth")
+
+    # Remove 'module.' prefix from the keys, since we trained on multi GPU's
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        new_key = k.replace("module.", "")  # Remove the 'module.' prefix
+        new_state_dict[new_key] = v
+
+    # Load the modified state_dict into your model
+    model.load_state_dict(new_state_dict)
+
 else:
     print(f"{model_file} not found")
     exit()
