@@ -81,7 +81,7 @@ data_folder = "datasets/"
 datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
 # datafile = data_folder + "input-formatedFull.txt"
 model_folder = "models/"
-model_file = model_folder + "ralphGPT.pth"
+model_file = model_folder + "ralphGPTweb.pth"
 save_file = model_folder + "gptnv.pth"
 preprocessor_model = model_folder + "preprocessor_model.pth"
 
@@ -91,7 +91,7 @@ print(f'Using device {device}')
 
 def signal_handler(sig, frame):
 
-    print('Ctrl-C detected, Saving model')
+    print('Ctrl-C detected')
     sys.exit(0)
 
 
@@ -423,7 +423,7 @@ if os.path.exists(model_file):
     print(f'Using {model_file} ')
     # model.load_state_dict(torch.load(model_file))
     # Load the saved state_dict
-    state_dict = torch.load("models/ralphGPT.pth")
+    state_dict = torch.load("models/ralphGPTweb.pth")
 
     # Remove 'module.' prefix from the keys, since we trained on multi GPU's
     new_state_dict = {}

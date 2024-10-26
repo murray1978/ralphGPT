@@ -3,7 +3,8 @@
 # using this as a learing and testbed GPT.
 # elapsed time incorrect, it's more like time accumulation.
 #
-# Change of tokenizer from char based to word/subword based
+# 24/10/24 Change of tokenizer from char based to word/subword based
+# 26/10/24 added frezze layers to code
 import os
 import sys
 
@@ -165,47 +166,17 @@ with open(datafile, 'r', encoding='utf-8') as f:
 
 text = text.replace('\n','')     
 
-# Change to the tokenizer
-# Additional Characters not found in the text
-#additional_chars = r"<>[]{}123456780\?-+=#$" #
-
-# here are all the unique characters that occur in this text
-#chars = sorted(list(set(text) | set(additional_chars)))
-#vocab_size = len(chars)
-
-# create a mapping from characters to integers
-# stoi = {ch: i for i,ch in enumerate(chars)}
-# itos = {i: ch for i,ch in enumerate(chars)}
-# encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
-# decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
-print("adding special tokens to tokenizer")
-"""
-tokenizer.append_special("__eou__")
-tokenizer.append_special("。")
-tokenizer.append_special('~')
-tokenizer.append_special('‘')
-tokenizer.append_special('¥')
-tokenizer.append_special('£')
-tokenizer.append_special('′')
-tokenizer.append_special('°')
-tokenizer.append_special('–')
-tokenizer.append_special('“')
-tokenizer.append_special('”')
-tokenizer.append_special('\x7f')
-tokenizer.append_special('、')  # at this point we should be modifiying tokenaizer.
-"""
-
-# create a reference to the encoder and decoder
-# encode = tokenizer.encode
-# decode = tokenizer.decode
+# decode for tokenizer
 def decode(text):
     return tokenizer.decode(text)
 
+# encode for tokenizer
 def encode(text_ids):
     return tokenizer.encode(text_ids).ids
 
 vocab_size = tokenizer.get_vocab_size()
 
+# prints our check note "tokenizer" == "token izer" extra space for some reaseon
 print( decode(encode("Check of tokenizer __eou__")))
 
 def split_data(text, eou_token_id):
@@ -511,11 +482,16 @@ def get_train_pair(split, eou_token_id):
     return x, y
 
 def freeze_layers(model, num_layers_to_frezze):
+
+    # If model is wrapped in DataParallel, access the underlying model
+    if isinstance(model, torch.nn.DataParallel):
+        model = model.module
+
     # freeze embedding layer and first num_lauers_to_freeze transformer blocks
     for param in model.token_embedding_table.parameters():
         param.requires_grad = False # Freeze token embedding layer
 
-    for param in model.position_embadding_table.parameters():
+    for param in model.position_embedding_table.parameters():
         param.requires_grad = False # Freeze position embedding layer
     
     # Freeze the first num_layers_to_freeze transformer blocks
@@ -525,6 +501,23 @@ def freeze_layers(model, num_layers_to_frezze):
                 param.requires_grad = False
 
     return model
+
+def gradual_unfreeze(model, current_epoch, freeze_epoch_interval):
+    # Ensure we access the underlying model if wrapped in DataParallel
+    if isinstance(model, torch.nn.DataParallel):
+        model = model.module
+
+    # Get the total number of layers
+    num_layers = len(model.blocks)
+    
+    # Calculate the number of layers to unfreeze based on the current epoch
+    layers_to_unfreeze = min(current_epoch // freeze_epoch_interval, num_layers)
+    
+    # Unfreeze layers up to `layers_to_unfreeze`
+    for i in range(layers_to_unfreeze):
+        for param in model.blocks[i].parameters():
+            param.requires_grad = True
+
 
 @torch.no_grad()
 def estimate_loss():
@@ -910,26 +903,44 @@ def input_with_timeout(prompt, timeout):
     return user_input[0]
 
 
-model = GPTLanguageModel(max_memory_size=large_memory_size)
+# Initialize the model and move it to device
+model = GPTLanguageModel(max_memory_size=large_memory_size).to(device)
+
+# Load model state if the file exists, without wrapping in DataParallel initially
+if os.path.exists(model_file):
+    print(f'Loading {model_file} ')
+    state_dict = torch.load(model_file)
+
+    # Remove 'module.' prefix if it exists in the state_dict keys
+    if "module." in list(state_dict.keys())[0]:  # Check if prefix exists
+        state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+    
+    # Load the state dict into the model (not wrapped in DataParallel yet)
+    model.load_state_dict(state_dict)
+    print('\tDone loading model.')
+
+# Wrap model in DataParallel if multiple GPUs are available
 if torch.cuda.device_count() > 1:
-    print(f"Using {torch.cuda.device_count()} GPU's")
+    print(f"Using {torch.cuda.device_count()} GPU(s)")
     model = nn.DataParallel(model)
 
-if os.path.exists(model_file):
-    print(f'Using {model_file} ')
-    model.load_state_dict(torch.load(model_file))
-    # create a PyTorch optimizer
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate_fine)
+# Set up optimizer after DataParallel and loading
+if fine_tune:
+    # Freeze layers before creating the optimizer
+    model = freeze_layers(model=model, num_layers_to_frezze=8)
+
+    # Check which layers are frozen (i.e., requires_grad is False)
+    frozen_layers = sum(not param.requires_grad for param in model.parameters())
+    total_layers = sum(1 for _ in model.parameters())
+    print(f"{frozen_layers} out of {total_layers} layers are frozen.")
+
+    optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=learning_rate_fine)
 else:
-    # create a PyTorch optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-if fine_tune:
-    model = freeze_layers(model=model, num_layers_to_frezze=6)
-    optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=learning_rate_fine)
-
-
+# Ensure model is on the correct device (optional as it's already to(device))
 model = model.to(device)
+
 # print the number of parameters in the model
 print(sum(p.numel() for p in model.parameters())/1e6, 'M parameters')
 
@@ -1057,6 +1068,12 @@ def train_fine_tune():
             if loss.dim() > 0:
                 loss = loss.mean()
 
+        gradual_unfreeze(model, current_epoch=iter, freeze_epoch_interval=5)
+            # Check which layers are frozen (i.e., requires_grad is False)
+        frozen_layers = sum(not param.requires_grad for param in model.parameters())
+        total_layers = sum(1 for _ in model.parameters())
+        print(f"{frozen_layers} out of {total_layers} layers are frozen.")
+
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
@@ -1093,68 +1110,11 @@ def trim_conversation_history(conversation, max_length=MAX_HISTORY_TOKENS):
         return tokenizer.decode(trimmed_tokens)
     return conversation
 
-
-# Not happy with original chat, chatGPT 4o helped with the new one, still not good with
-# printing last two parts of the conversation.
-def chat_loop(model):
-    user_input = ""
-    print("Enter your queries. Type 'exit' to quit.")
-
-    while True:
-        try:
-            _input = input(": ")
-            if _input.lower() == "exit":
-                print("Exiting chat.")
-                break
-
-            if _input.strip() == "":
-                print("Input cannot be empty. Please try again.")
-                continue
-
-            # Combine the input and previous conversation context
-            user_input += _input + " __eou__"
-
-            # Generate response from the model
-            response = generate_response(model, user_input, max_new_tokens=256)
-            print(f"Model: {response}")
-
-            # Update the context
-            user_input += response + "\n"
-
-        except TimeoutError:
-            print("No input detected for a while. Auto-response generated.")
-            response = generate_response(model, "No input detected.")
-            print(f"Model: {response}")
-            continue
-
-def chat_loop2(model):
-    user_input = ""
-    print("Enter your queries. Type 'exit' to quit.")
-    
-    while True:
-        _input = input(": ")
-        if _input.lower() == "exit":
-            print("Exiting chat.")
-            break
-
-        # Append new user input to conversation history
-        user_input += f"User: {_input} __eou__"
-
-        # Trim the conversation history to avoid excessive context
-        user_input = trim_conversation_history(user_input)
-
-        # Generate response from model
-        response = generate_response(model, user_input, max_new_tokens=256)
-
-        # Print model response
-        print(f"Model: {response}")
-
-        # Append model response to conversation history
-        user_input += f"Model: {response} __eou__"
-
-def chat_loop3(model):
-    conversation_history = ""  # Keep a concise conversation history
-    user_input_end = 0
+## still not there, but getting closer.
+def chat_loop5(model):
+    conversation_history = []  # Keep recent exchanges only
+    max_history_pairs = 1  # Keep only the last exchange for context
+    total_len = 0
     print("Enter your queries. Type '__exit__' to quit.")
     
     while True:
@@ -1163,24 +1123,87 @@ def chat_loop3(model):
             print("Exiting chat.")
             break
 
-        # Append new user input to conversation history
-        conversation_history += f"User: {_input} __eou__"
+        input_length = len(_input)
+        _input += f"{_input} __eou__"
+        
+        print(f"input length {input_length}")
 
-        user_input_length = len(f"User: {_input}")
+        # Append the new user input to conversation history
+        conversation_history.append(_input)
 
-        # Optionally limit the length of the conversation history if needed
-        conversation_history = conversation_history[-1000:]  # Adjust this limit based on model capacity
+        # Limit conversation history to avoid echo and repetition
+        if len(conversation_history) > max_history_pairs * 2:
+            conversation_history = conversation_history[-max_history_pairs * 2:]
+
+        # Prepare input with limited context for the model
+        conversation_str = " ".join(conversation_history)
+
+        # Generate response
+        response = generate_response(model, conversation_str, max_new_tokens=256)
+
+        # Trim response to avoid echoing and extraneous parts
+        model_response = response.strip()
+        response_len = len(model_response)
+        total_len = total_len + response_len + input_length
+
+        print(f"respose length {response_len}")
+        print(f"end position is {total_len - response_len}")
+
+        # Display the current user input and model response only
+        print(f"Model: {model_response[total_len - response_len:]}")
+
+        # Add model response to conversation history for minimal context
+        conversation_history.append(f" {model_response} __eou__")
+
+def chat_loop6(model):
+    conversation_history = []  # Keep recent exchanges only
+    max_history_pairs = 1  # Keep only the last exchange for context
+    total_len = 0
+    print("Enter your queries. Type '__exit__' to quit.")
+    
+    while True:
+        _input = input("user: ")
+        if _input.lower() == "__exit__":
+            print("Exiting chat.")
+            break
+
+        input_length = len(_input)
+        _input += f"{_input} __eou__"
+        
+        print(f"input length {input_length}")
+
+        # Append user input to conversation history
+        conversation_history.append(_input)
+
+        # Limit conversation history to the last `max_history_pairs` exchanges
+        if len(conversation_history) > max_history_pairs * 2:
+            conversation_history = conversation_history[-max_history_pairs * 2:]
+
+        # Compile limited conversation history for model context
+        conversation_str = " ".join(conversation_history)
 
         # Generate response from model
-        response = generate_response(model, conversation_history, max_new_tokens=256)
+        response = generate_response(model, conversation_str, max_new_tokens=256).strip()
+        
 
-        # Print model response
-        #print(f"raw {response}")
-        print(f"Model: {response[user_input_length:]}")
+        # Trim any echo of user input at the start of the response
+
+        model_response = response[len(_input):].strip()
+        response_len = len(model_response)
+
+        print(f"respose length {response_len}")
+        print(f"end position is {total_len - response_len}")
+
+
+        # Print the user input and trimmed model response
+        print(f"Model raw: {model_response}")
+        print(f"Model: {model_response[total_len - response_len:]}")
 
         # Append model response to conversation history
-        conversation_history += f"Model: {response} __eou__"
+        conversation_history.append(f"{model_response} __eou__")
+
+        total_len = total_len + response_len + input_length
 
 
 if for_chat:
-    chat_loop3(model=model)
+    chat_loop6(model=model)
