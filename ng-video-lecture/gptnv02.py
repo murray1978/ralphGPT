@@ -5,6 +5,21 @@
 #
 # 24/10/24 Change of tokenizer from char based to word/subword based
 # 26/10/24 added frezze layers to code
+
+"""
+TODO
+ +impliment json files for parameters
+ +create a language preprocessor for descision.
+ +transfer learnt ideas to Shakespare model/engine
+ +impliment interupt learning/training for evaluation and use.
+NOTES
+ + 5000 iterations seem to generate a resonable amount of results
+ + Frezzing 20% of layers and unfreezing over 50 iterations seems to work well
+      Less that 50 iterations does not seem to work well.
+To try
+ + Small training iterations large learning rates
+ + 
+"""
 import os
 import sys
 
@@ -44,10 +59,10 @@ torch.cuda.memory.set_per_process_memory_fraction(0.9)
 # hyperparameters
 batch_size = 32 # 64 how many independent sequences will we process in parallel? '48 works'
 block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 5000
+max_iters = 8000
 eval_interval = 100
-min_val_loss = 1.4  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
-loss_separation = 5.3  # difference between val loss and train loss
+min_val_loss = 0.8  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
+loss_separation = 8.3  # difference between val loss and train loss
 
 # variable learning rate
 learning_rate_fine = 1e-5 # 1e-5 
@@ -60,7 +75,11 @@ n_head = 10 # 6 effects model '10 works'
 n_layer = 10  # 6 effects model '10 works'
 dropout = 0.25  # does not effect model 0.25 'original'
 # ------------
+layers_to_freeze = 2
+unfreeze_interval = 50
+unfreeze = True
 
+#--------------
 with_memory = False
 
 # user conversation labels, to be added at a future date
@@ -89,13 +108,13 @@ datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
 # model files
 model_path = "models/"
 model_ext = ".pth"
-model_filename = "ralphGPT"
+model_filename = "ralphGPTv2"
 model_file = model_path + model_filename + model_ext
-save_file = model_path + model_filename + "" + model_ext
+save_file = model_path + model_filename + "fine01" + model_ext #ralphGPTv2fine works ok, may need more data or preprocessor.
 # parameter file
 param_file = model_path + model_filename + ".json"
 
-#lets load the parameters
+# lets load the parameters, TODO - maybe here for a while.....
 if os.path.exists(param_file):
     print(f"json file {param_file} found, loading")
 else:
@@ -121,6 +140,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 def select_mode():
+    global dropout
     print("Select the mode you want to run:")
     print("1. Train")
     print("2. Fine-Tune")
@@ -138,7 +158,7 @@ def select_mode():
         print("Training mode selected.")
     elif choice == '2':
         _fine_tune = True
-        dropout = 0.15      # Ok probably not the best place for it here
+        dropout = 0.1      # Ok probably not the best place for it here
         print("Fine-Tuning mode selected.")
     elif choice == '3':
         _for_chat = True
@@ -481,11 +501,14 @@ def get_train_pair(split, eou_token_id):
     
     return x, y
 
+""" 
+Works as expected but freezes at a differnet structual level.
+"""
 def freeze_layers(model, num_layers_to_frezze):
 
     # If model is wrapped in DataParallel, access the underlying model
     if isinstance(model, torch.nn.DataParallel):
-        model = model.module
+        raise RuntimeError("freeze_layers should be called before applying DataParallel.")
 
     # freeze embedding layer and first num_lauers_to_freeze transformer blocks
     for param in model.token_embedding_table.parameters():
@@ -502,21 +525,37 @@ def freeze_layers(model, num_layers_to_frezze):
 
     return model
 
-def gradual_unfreeze(model, current_epoch, freeze_epoch_interval):
-    # Ensure we access the underlying model if wrapped in DataParallel
-    if isinstance(model, torch.nn.DataParallel):
-        model = model.module
+def freeze_model_blocks(model, num_blocks_to_freeze=3):
+    # Freeze the first few blocks up to `num_blocks_to_freeze`
 
-    # Get the total number of layers
-    num_layers = len(model.blocks)
-    
+    # If model is wrapped in DataParallel, access the underlying model
+    if isinstance(model, torch.nn.DataParallel):
+        raise RuntimeError("freeze_layers should be called before applying DataParallel.")
+
+    for i in range(num_blocks_to_freeze):
+        for param in model.blocks[i].parameters():
+            param.requires_grad = False
+    print(f"Froze the first {num_blocks_to_freeze} blocks.")
+
+    return model
+
+# model is passed by refernce, no need to return model.
+def gradual_unfreeze(model, current_epoch, freeze_epoch_interval):
+    # Access the underlying model if wrapped in DataParallel
+    underlying_model = model.module if isinstance(model, torch.nn.DataParallel) else model
+
+    # Get the total number of layers (blocks) in the model
+    num_layers = len(underlying_model.blocks)
+
     # Calculate the number of layers to unfreeze based on the current epoch
     layers_to_unfreeze = min(current_epoch // freeze_epoch_interval, num_layers)
-    
-    # Unfreeze layers up to `layers_to_unfreeze`
+
+    # Unfreeze the specified number of layers
     for i in range(layers_to_unfreeze):
-        for param in model.blocks[i].parameters():
+        for param in underlying_model.blocks[i].parameters():
             param.requires_grad = True
+
+    # print(f"Unfroze the first {layers_to_unfreeze} layers out of {num_layers}.")
 
 
 @torch.no_grad()
@@ -919,15 +958,13 @@ if os.path.exists(model_file):
     model.load_state_dict(state_dict)
     print('\tDone loading model.')
 
-# Wrap model in DataParallel if multiple GPUs are available
-if torch.cuda.device_count() > 1:
-    print(f"Using {torch.cuda.device_count()} GPU(s)")
-    model = nn.DataParallel(model)
+
 
 # Set up optimizer after DataParallel and loading
 if fine_tune:
     # Freeze layers before creating the optimizer
-    model = freeze_layers(model=model, num_layers_to_frezze=8)
+    # model = freeze_layers(model=model, num_layers_to_frezze=3)
+    model = freeze_model_blocks(model=model,num_blocks_to_freeze=layers_to_freeze)
 
     # Check which layers are frozen (i.e., requires_grad is False)
     frozen_layers = sum(not param.requires_grad for param in model.parameters())
@@ -938,16 +975,25 @@ if fine_tune:
 else:
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
+# Wrap model in DataParallel if multiple GPUs are available
+if torch.cuda.device_count() > 1:
+    print(f"Using {torch.cuda.device_count()} GPU(s)")
+    model = nn.DataParallel(model)
+
 # Ensure model is on the correct device (optional as it's already to(device))
 model = model.to(device)
 
 # print the number of parameters in the model
 print(sum(p.numel() for p in model.parameters())/1e6, 'M parameters')
 
+# Inspect named modules to understand the structure
+def print_model_structure( model ):
+    for name, module in model.named_modules():
+        print(name)
+
 scaler = GradScaler()
 
 start_time = time.time()
-
 
 # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.8, patience=20)
@@ -958,9 +1004,6 @@ def train_normal():
 
     for iter in range(max_iters):
         iter_start_time = time.time()
-
-        if for_chat:
-            break
 
         # every once in a while evaluate the loss on train and val sets
         if iter % eval_interval == 0 or iter == max_iters - 1:
@@ -1018,9 +1061,6 @@ def train_fine_tune():
     for iter in range(max_iters):
         iter_start_time = time.time()
 
-        if for_chat:
-            break
-
         # every once in a while evaluate the loss on train and val sets
         if iter % eval_interval == 0 or iter == max_iters - 1:
             print("=" * 25)
@@ -1067,13 +1107,9 @@ def train_fine_tune():
         if torch.cuda.device_count() > 1:
             if loss.dim() > 0:
                 loss = loss.mean()
-
-        gradual_unfreeze(model, current_epoch=iter, freeze_epoch_interval=5)
-            # Check which layers are frozen (i.e., requires_grad is False)
-        frozen_layers = sum(not param.requires_grad for param in model.parameters())
-        total_layers = sum(1 for _ in model.parameters())
-        print(f"{frozen_layers} out of {total_layers} layers are frozen.")
-
+        if unfreeze:
+            gradual_unfreeze(model, current_epoch=iter, freeze_epoch_interval=unfreeze_interval)
+        
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
@@ -1084,7 +1120,7 @@ def train_fine_tune():
 if fine_tune:
     print("training fine tune")
     train_fine_tune()
-else:
+elif not for_chat:
     print("Training base data")
     train_normal()
 
@@ -1155,54 +1191,78 @@ def chat_loop5(model):
         # Add model response to conversation history for minimal context
         conversation_history.append(f" {model_response} __eou__")
 
+def process_response(user_input, model_response):
+    input_length = len(user_input)
+    response_length = len(model_response)
+
+    # Calculate end position for debugging
+    end_position = input_length - response_length
+    print(f"input length: {input_length}")
+    print(f"response length: {response_length}")
+    print(f"end position: {end_position}")
+
+    # Trim any overlapping input from the response, if needed
+    if model_response.startswith(user_input):
+        model_response = model_response[input_length:].strip()
+
+    print(f"Model: {model_response}")
+    return model_response
+
+
 def chat_loop6(model):
     conversation_history = []  # Keep recent exchanges only
     max_history_pairs = 1  # Keep only the last exchange for context
     total_len = 0
-    print("Enter your queries. Type '__exit__' to quit.")
+    print("Enter your queries. Type '__exit__' to quit, '__new__' for new chat")
     
     while True:
         _input = input("user: ")
         if _input.lower() == "__exit__":
             print("Exiting chat.")
             break
+        if _input.lower() == "__new__":
+            print("new session")
+            _input += ""
+            conversation_history.clear()
+        else:
+            input_length = len(_input)
+            _input += f"{_input} __eou__"
+            
+            print(f"input length {input_length}")
 
-        input_length = len(_input)
-        _input += f"{_input} __eou__"
-        
-        print(f"input length {input_length}")
+            # Append user input to conversation history
+            conversation_history.append(_input)
 
-        # Append user input to conversation history
-        conversation_history.append(_input)
+            # Limit conversation history to the last `max_history_pairs` exchanges
+            if len(conversation_history) > max_history_pairs * 2:
+                conversation_history = conversation_history[-max_history_pairs * 2:]
 
-        # Limit conversation history to the last `max_history_pairs` exchanges
-        if len(conversation_history) > max_history_pairs * 2:
-            conversation_history = conversation_history[-max_history_pairs * 2:]
+            # Compile limited conversation history for model context
+            conversation_str = " ".join(conversation_history)
 
-        # Compile limited conversation history for model context
-        conversation_str = " ".join(conversation_history)
+            # Generate response from model
+            response = generate_response(model, conversation_str, max_new_tokens=256).strip()
+            
 
-        # Generate response from model
-        response = generate_response(model, conversation_str, max_new_tokens=256).strip()
-        
+            # Trim any echo of user input at the start of the response
 
-        # Trim any echo of user input at the start of the response
+            # model_response = response[len(_input):].strip()
+            # response_len = len(model_response)
 
-        model_response = response[len(_input):].strip()
-        response_len = len(model_response)
-
-        print(f"respose length {response_len}")
-        print(f"end position is {total_len - response_len}")
+            # print(f"respose length {response_len}")
+            # print(f"end position is {total_len - response_len}")
 
 
-        # Print the user input and trimmed model response
-        print(f"Model raw: {model_response}")
-        print(f"Model: {model_response[total_len - response_len:]}")
+            # Print the user input and trimmed model response
+            # print(f"Model raw: {model_response}")
+            # print(f"Model: {model_response[total_len - response_len:]}")
 
-        # Append model response to conversation history
-        conversation_history.append(f"{model_response} __eou__")
+            # Append model response to conversation history
+            model_response = process_response(_input, response)
 
-        total_len = total_len + response_len + input_length
+            conversation_history.append(f"{model_response} __eou__")
+
+            #total_len = total_len + response_len + input_length
 
 
 if for_chat:

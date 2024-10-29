@@ -22,8 +22,6 @@ import signal
 from TrainingTimer import TrainingTimer
 import time
 
-import matplotlib.pyplot as plt
-
 #from tokeniser import Tokenizer
 from tokenizers import Tokenizer
 from flask import Flask, request, jsonify
@@ -62,28 +60,10 @@ dropout = 0.25  # does not effect model
 
 with_memory = False
 
-# user conversation will have bits from, may not need brackets, move to tokenizer.labels
-labels = {
-    "userLabel": "</user text=\"\">",
-    "adminLabel": "</admin text=\"\">",
-    "content_start":  "<content>",
-    "content_end": "</content>",
-    "convo_start": "<conversation>",
-    "convo_end": "</conversation>",
-    "character": "<character name=\"\">",
-    "statementStart": "<statement>",
-    "statementEnd": "</statement>",
-}
 # how to generate conversation context
-
-# Data files
-data_folder = "datasets/"
-datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
-# datafile = data_folder + "input-formatedFull.txt"
 model_folder = "models/"
-model_file = model_folder + "ralphGPTweb.pth"
-save_file = model_folder + "gptnv.pth"
-preprocessor_model = model_folder + "preprocessor_model.pth"
+model_file = model_folder + "ralphGPTweb01.pth"
+
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f'Using device {device}')
@@ -97,52 +77,14 @@ def signal_handler(sig, frame):
 
 signal.signal(signal.SIGINT, signal_handler)
 
-small_memory_size = 512
-medium_memory_size = 1024
-large_memory_size = 2048 + 1024
-
 torch.manual_seed(1337)
 
-# wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt
-with open(datafile, 'r', encoding='utf-8') as f:
-    text = f.read()                          
-
-# Change to the tokenizer
-# Additional Characters not found in the text
-#additional_chars = r"<>[]{}123456780\?-+=#$" #
-
-# here are all the unique characters that occur in this text
-#chars = sorted(list(set(text) | set(additional_chars)))
-#vocab_size = len(chars)
-
-# create a mapping from characters to integers
-# stoi = {ch: i for i,ch in enumerate(chars)}
-# itos = {i: ch for i,ch in enumerate(chars)}
-# encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
-# decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
-"""tokenizer.append_special("__eou__")
-tokenizer.append_special("。")
-tokenizer.append_special('~')
-tokenizer.append_special('‘')
-tokenizer.append_special('¥')
-tokenizer.append_special('£')
-tokenizer.append_special('′')
-tokenizer.append_special('°')
-tokenizer.append_special('–')
-tokenizer.append_special('“')
-tokenizer.append_special('”')
-tokenizer.append_special('\x7f')
-tokenizer.append_special('、')  # at this point we should be modifiying tokenaizer.
-"""
-#encode = tokenizer.encode
-#decode = tokenizer.decode
 def decode(text):
     return tokenizer.decode(text)
 
 def encode(text_ids):
     return tokenizer.encode(text_ids).ids
     
-#vocab_size = tokenizer.get_vocab_size()
 vocab_size = tokenizer.get_vocab_size()
 
 class Head(nn.Module):
@@ -417,13 +359,13 @@ def generate_response(_model, _query, max_new_tokens=60):
     return decode(output_ids)
 
 
-model = GPTLanguageModel(max_memory_size=large_memory_size)
+model = GPTLanguageModel()
 
 if os.path.exists(model_file):
     print(f'Using {model_file} ')
     # model.load_state_dict(torch.load(model_file))
     # Load the saved state_dict
-    state_dict = torch.load("models/ralphGPTweb.pth")
+    state_dict = torch.load(model_file)
 
     # Remove 'module.' prefix from the keys, since we trained on multi GPU's
     new_state_dict = {}
@@ -438,7 +380,13 @@ else:
     print(f"{model_file} not found")
     exit()
 
+# Wrap model in DataParallel if multiple GPUs are available
+#if torch.cuda.device_count() > 1:
+#    print(f"Using {torch.cuda.device_count()} GPU(s)")
+#    model = nn.DataParallel(model)
+
 model = model.to(device)
+
 # print the number of parameters in the model
 print(sum(p.numel() for p in model.parameters())/1e6, 'M parameters')
 
@@ -454,7 +402,7 @@ app = Flask(__name__)
 def index():
     return '''
     <form action="/generate" method="post">
-        <textarea name="prompt" rows="4" cols="50" placeholder="Enter your prompt here"></textarea><br>
+        <textarea name="prompt" rows="4" cols="50" placeholder="Message RalphGPT"></textarea><br>
         <input type="submit" value="Generate Response">
     </form>
     '''
