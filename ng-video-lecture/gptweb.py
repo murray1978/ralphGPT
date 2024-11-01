@@ -40,7 +40,7 @@ torch.cuda.memory.set_per_process_memory_fraction(0.9)
 
 # hyperparameters
 batch_size = 32 # 64 how many independent sequences will we process in parallel? '48 works'
-block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
+block_size = 256 # batch_size * 4  # 256 what is the maximum context length for predictions?
 max_iters = 8000
 eval_interval = 400
 min_val_loss = .90  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
@@ -62,7 +62,7 @@ with_memory = False
 
 # how to generate conversation context
 model_folder = "models/"
-model_file = model_folder + "ralphGPTweb01.pth"
+model_file = model_folder + "ralphGPTv3fine.pth"
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'

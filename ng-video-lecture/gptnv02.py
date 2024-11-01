@@ -8,6 +8,7 @@
 
 """
 TODO
+ + Add __user__, __bot__ tags. 
  +impliment json files for parameters
  +create a language preprocessor for descision.
  +transfer learnt ideas to Shakespare model/engine
@@ -46,7 +47,7 @@ import json
 from tokenizers import Tokenizer
 
 # tokenizer = Tokenizer()
-tokenizer = Tokenizer.from_file("custom_tokenizer.json")
+tokenizer = Tokenizer.from_file("ralphGPTv4_tokenizer.json")
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 for device in physical_devices:
@@ -58,25 +59,25 @@ torch.cuda.memory.set_per_process_memory_fraction(0.9)
 
 # hyperparameters
 batch_size = 32 # 64 how many independent sequences will we process in parallel? '48 works'
-block_size = batch_size * 4  # 256 what is the maximum context length for predictions?
-max_iters = 8000
+block_size = 256 # batch_size * 4  # 128, what is the maximum context length for predictions? n_cxt
+max_iters = 10000
 eval_interval = 100
 min_val_loss = 0.8  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
 loss_separation = 8.3  # difference between val loss and train loss
 
 # variable learning rate
-learning_rate_fine = 1e-5 # 1e-5 
+learning_rate_fine = 3e-3 # 1e-5 
 learning_rate = 3e-4  # 3e-4
 
 # Transformer parameters, effects as in size, saving.
 eval_iters = 100  # does not effect model
-n_embd = 256 * 2   # effects model '256 works'
+n_embd = 256 + 128 + 64 # effects model '256 works'
 n_head = 10 # 6 effects model '10 works'
 n_layer = 10  # 6 effects model '10 works'
 dropout = 0.25  # does not effect model 0.25 'original'
 # ------------
 layers_to_freeze = 2
-unfreeze_interval = 50
+unfreeze_interval = 1000
 unfreeze = True
 
 #--------------
@@ -95,6 +96,7 @@ labels = {
     "statementEnd": "</statement>",
 }
 
+
 model_params = {
     "learning_rate": 0.001,
     "epochs": 50,
@@ -108,9 +110,9 @@ datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
 # model files
 model_path = "models/"
 model_ext = ".pth"
-model_filename = "ralphGPTv2"
+model_filename = "ralphGPTv4" # v2 = batch_size = 128
 model_file = model_path + model_filename + model_ext
-save_file = model_path + model_filename + "fine01" + model_ext #ralphGPTv2fine works ok, may need more data or preprocessor.
+save_file = model_path + model_filename + "f" + model_ext #ralphGPTv2fine works ok, may need more data or preprocessor.
 # parameter file
 param_file = model_path + model_filename + ".json"
 
@@ -195,6 +197,9 @@ def encode(text_ids):
     return tokenizer.encode(text_ids).ids
 
 vocab_size = tokenizer.get_vocab_size()
+eou_token_id=encode('__eou__')
+bot_token_id=encode('__bot__')
+usr_token_id=encode('__usr__')
 
 # prints our check note "tokenizer" == "token izer" extra space for some reaseon
 print( decode(encode("Check of tokenizer __eou__")))
@@ -215,6 +220,7 @@ def split_data(text, eou_token_id):
             return train_data, val_data
 
         # Fine-tune dataset handling (aligning with __eou__ tokens)
+        # TODO add in __bot__, __user__, __end__ tags.
         else:
             print("\tFine-tune dataset")
 
@@ -286,7 +292,8 @@ def pad_or_trim(sequence, length):
         return torch.cat([sequence, padding])
     return sequence
 
-def get_train_pair_with_memory_limit(split, eou_token_id, memory_limit_kb=8):
+def get_train_pair_with_memory_limit(split, eou_token_id, memory_limit_kb=8,  
+                                    user_token_id=None, bot_token_id=None ):
     """
     Generates a small batch of input-output pairs for training, 
     ensuring that the memory usage of the batch does not exceed the given limit,
@@ -329,8 +336,15 @@ def get_train_pair_with_memory_limit(split, eou_token_id, memory_limit_kb=8):
         if user_sentence.numel() == 0 or bot_sentence.numel() == 0:
             prev_idx = eou_indices[idx + 1] + 1
             continue  # Skip to the next pair if either sentence is empty
+        
+        # Prepend __user__ and __bot__ tokens
+        user_token_id_tensor = torch.tensor([user_token_id], dtype=torch.long).unsqueeze(0)
+        user_sentence = torch.cat([torch.tensor([user_token_id_tensor], dtype=torch.long), user_sentence])
+        bot_token_id_tensor = torch.tensor([bot_token_id], dtype=torch.long).unsqueeze(0)
+        bot_sentence = torch.cat([torch.tensor([bot_token_id_tensor], dtype=torch.long), bot_sentence])
 
-        # Add missing __eou__ token if not present
+        # Add missing __eou__ token if not present, I guess this assumes that the struct has been 
+        # as a tokenized input. 
         if user_sentence[-1].item() != eou_token_id:
             user_sentence = torch.cat([user_sentence, torch.tensor([eou_token_id], dtype=torch.long)])
         if bot_sentence[-1].item() != eou_token_id:
@@ -568,7 +582,7 @@ def estimate_loss():
             if train_only:
                 X, Y = get_batch(split)
             else:
-                X, Y = get_train_pair_with_memory_limit(split=split, eou_token_id=encode('__eou__'))
+                X, Y = get_train_pair_with_memory_limit(split=split, eou_token_id=eou_token_id, bot_token_id=bot_token_id,user_token_id=usr_token_id)
             logits, loss = model(X, Y)
 
             #handle multiple GPUS
@@ -1031,7 +1045,7 @@ def train_normal():
             print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}, elapsed time = {total_elapsed_time:.2f}s")
 
             # Update and get remaining time estimate
-            remaining_time = timer.update()
+            remaining_time = iteration_time * (max_iters - iter)  # timer.update()
             print(f"Estimated time remaining: {timer.format_time(remaining_time)}")
 
 
@@ -1044,7 +1058,7 @@ def train_normal():
         with autocast():
             # xb = xb.requires_grad_(True)
             # yb = yb.requires_grad_(True)
-            logits, loss = model(xb, yb)
+            _, loss = model(xb, yb) # logits, loss = model(xb, yb) # logits not being used.
 
         if torch.cuda.device_count() > 1:
             if loss.dim() > 0:
@@ -1087,14 +1101,14 @@ def train_fine_tune():
             print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}, elapsed time = {total_elapsed_time:.2f}s")
 
             # Update and get remaining time estimate
-            remaining_time = timer.update()
+            remaining_time = iteration_time * (max_iters - iter)  # timer.update()
             print(f"Estimated time remaining: {timer.format_time(remaining_time)}")
 
 
         # sample a batch of data
         # xb, yb = get_batch('train', data)
         eou_token_id = encode('__eou__')
-        xb, yb = get_train_pair_with_memory_limit('train', eou_token_id)
+        xb, yb = get_train_pair_with_memory_limit('train', eou_token_id=eou_token_id, bot_token_id=bot_token_id,user_token_id=usr_token_id)
 
         optimizer.zero_grad(set_to_none=True)
 
@@ -1102,7 +1116,7 @@ def train_fine_tune():
         with autocast():
             # xb = xb.requires_grad_(True)
             # yb = yb.requires_grad_(True)
-            logits, loss = model(xb, yb)
+            _, loss = model(xb, yb)
 
         if torch.cuda.device_count() > 1:
             if loss.dim() > 0:
@@ -1117,6 +1131,7 @@ def train_fine_tune():
         torch.cuda.empty_cache()
         gc.collect()
 
+# TODO - input sanity check for xb, yb both train and fine tune
 if fine_tune:
     print("training fine tune")
     train_fine_tune()
@@ -1196,7 +1211,7 @@ def process_response(user_input, model_response):
     response_length = len(model_response)
 
     # Calculate end position for debugging
-    end_position = input_length - response_length
+    end_position = response_length - input_length
     print(f"input length: {input_length}")
     print(f"response length: {response_length}")
     print(f"end position: {end_position}")
@@ -1205,7 +1220,7 @@ def process_response(user_input, model_response):
     if model_response.startswith(user_input):
         model_response = model_response[input_length:].strip()
 
-    print(f"Model: {model_response}")
+    print(f"Model: {model_response[end_position:]}")
     return model_response
 
 
@@ -1216,17 +1231,17 @@ def chat_loop6(model):
     print("Enter your queries. Type '__exit__' to quit, '__new__' for new chat")
     
     while True:
-        _input = input("user: ")
-        if _input.lower() == "__exit__":
+        raw_input = input("user: ")
+        if raw_input.lower() == "__exit__":
             print("Exiting chat.")
             break
-        if _input.lower() == "__new__":
+        if raw_input.lower() == "__new__":
             print("new session")
             _input += ""
             conversation_history.clear()
         else:
-            input_length = len(_input)
-            _input += f"{_input} __eou__"
+            input_length = len(raw_input)
+            _input = f"__user__ {raw_input} __eou__"
             
             print(f"input length {input_length}")
 
@@ -1242,7 +1257,12 @@ def chat_loop6(model):
 
             # Generate response from model
             response = generate_response(model, conversation_str, max_new_tokens=256).strip()
-            
+
+            print(f'Response raw = {response}')
+
+            # Remove any echo of the user input at the start of the response
+            if response.startswith(_input):
+                response = response[len(_input):].strip()
 
             # Trim any echo of user input at the start of the response
 

@@ -9,7 +9,7 @@ tokenizer = Tokenizer(BPE())
 tokenizer.pre_tokenizer = Whitespace()
 
 # Step 2: Set up the trainer
-trainer = BpeTrainer(vocab_size=30000, min_frequency=2, special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]", "__eou__"])
+trainer = BpeTrainer(vocab_size=30000, min_frequency=2, special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]", "__eou__","__usr__","__bot__"])
 
 # Step 3: Train the tokenizer on your dataset
 datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
@@ -20,4 +20,4 @@ if os.path.exists(datafile):
 tokenizer.train_from_iterator(lines, trainer)
 
 # Save the tokenizer to disk
-tokenizer.save("custom_tokenizer.json")
+tokenizer.save("ralphGPTv4_tokenizer.json")
