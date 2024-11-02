@@ -5,18 +5,23 @@
 #
 # 24/10/24 Change of tokenizer from char based to word/subword based
 # 26/10/24 added frezze layers to code
-
+# 02/11/24 Considering using this as a base for an AGI
 """
 TODO
- + Add __user__, __bot__ tags. 
+ + Add __user__, __bot__ tags. - Done, resulted in increased memory usage, decreased embeddings to suit.
  +impliment json files for parameters
  +create a language preprocessor for descision.
  +transfer learnt ideas to Shakespare model/engine
  +impliment interupt learning/training for evaluation and use.
+ +fix response generation so we can start logging conversations for more training.
+ +Base training data, add __usr__, __bot__ tokens to 10-25% of base training -> new training dataset file.
+ +Create a fine training dataset file, remove the need for padding.
 NOTES
  + 5000 iterations seem to generate a resonable amount of results
+ + 10000 iterations or more needed for fine tuning
  + Frezzing 20% of layers and unfreezing over 50 iterations seems to work well
       Less that 50 iterations does not seem to work well.
+ + Reduce get_train_pair_with_memory_limit from 8kb to 4kb to see if that helps avoid extra padding.
 To try
  + Small training iterations large learning rates
  + 
@@ -62,11 +67,11 @@ batch_size = 32 # 64 how many independent sequences will we process in parallel?
 block_size = 256 # batch_size * 4  # 128, what is the maximum context length for predictions? n_cxt
 max_iters = 10000
 eval_interval = 100
-min_val_loss = 0.8  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
+min_val_loss = 2.2  # if validation loss below this value quit and save early, anything above 1.5 not good for inital training.
 loss_separation = 8.3  # difference between val loss and train loss
 
 # variable learning rate
-learning_rate_fine = 3e-3 # 1e-5 
+learning_rate_fine = 1e-5 # 1e-5 
 learning_rate = 3e-4  # 3e-4
 
 # Transformer parameters, effects as in size, saving.
@@ -76,8 +81,8 @@ n_head = 10 # 6 effects model '10 works'
 n_layer = 10  # 6 effects model '10 works'
 dropout = 0.25  # does not effect model 0.25 'original'
 # ------------
-layers_to_freeze = 2
-unfreeze_interval = 1000
+layers_to_freeze = 3
+unfreeze_interval = 5000
 unfreeze = True
 
 #--------------
@@ -105,14 +110,14 @@ model_params = {
 
 # Data files
 data_folder = "datasets/"
-datafile = "datasets/dataset/ijcnlp_dailydialog/dialogues_text.txt"
+datafile = data_folder + "dialogues.txt"
 # datafile = data_folder + "input-formatedFull.txt"
 # model files
 model_path = "models/"
 model_ext = ".pth"
-model_filename = "ralphGPTv4" # v2 = batch_size = 128
+model_filename = "ralphGPTv5" # v2 = batch_size = 128, ralphGPTv4 or 4a is a base GPT
 model_file = model_path + model_filename + model_ext
-save_file = model_path + model_filename + "f" + model_ext #ralphGPTv2fine works ok, may need more data or preprocessor.
+save_file = model_path + model_filename + "" + model_ext #ralphGPTv2fine works ok, may need more data or preprocessor.
 # parameter file
 param_file = model_path + model_filename + ".json"
 
@@ -205,6 +210,21 @@ usr_token_id=encode('__usr__')
 print( decode(encode("Check of tokenizer __eou__")))
 
 def split_data(text, eou_token_id):
+    if not for_chat:  # Do not need to set up a dataset if in chat
+        print("Preparing dataset")
+
+    # Tokenize the text
+    data = torch.tensor(encode(text), dtype=torch.long)
+
+    # Base dataset handling (no special treatment)
+    if not fine_tune:
+        print("\tBase dataset")
+        n = int(0.9 * len(data))  # First 90% will be train, rest val
+        train_data = data[:n]
+        val_data = data[n:]
+        return train_data, val_data
+
+def split_data_old(text, eou_token_id):
     if not for_chat:  # Do not need to set up a dataset if in chat
         print("Preparing dataset")
 
@@ -329,6 +349,7 @@ def get_train_pair_with_memory_limit(split, eou_token_id, memory_limit_kb=8,
         if idx in seen_indices:  # Skip if pair already seen
             continue
 
+        # both of these are tensors
         user_sentence = _data[prev_idx:eou_indices[idx] + 1]  # User input
         bot_sentence = _data[eou_indices[idx] + 1:eou_indices[idx + 1] + 1]  # Bot response
 
@@ -384,7 +405,16 @@ def get_train_pair_with_memory_limit(split, eou_token_id, memory_limit_kb=8,
     
         # Move tensors to the device
         x, y = x.to(device), y.to(device)
-    
+
+        """"
+        # Lets check the return values, all seem to be on order, nothing forged.
+        print(f"__eou__ {eou_token_id}")
+        print(f"user token {user_token_id}")
+        print(f"user sentence {x}")
+        print(f"bot token {bot_token_id}")
+        print(f"bot sentence {y}")
+        os._exit(0)
+        """
         return x, y
     else:
         print("No valid data pairs were found for this iteration.")
@@ -820,7 +850,6 @@ class GPTLanguageModel(nn.Module):
 
     def generate_nv(self, idx, max_new_tokens, stop_token=None, temperature=1.0, top_p=0.9):
         self.secondary_memory = None
-        # stop_token = stop_token[-1]  # Move this outside if needed
 
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -block_size:]
@@ -906,9 +935,7 @@ def generate_response(_model, _query, max_new_tokens=60):
     _model.eval()
     input_ids = torch.tensor(encode(_query), dtype=torch.long).unsqueeze(0).to(device)
     # Get the token ID for "__eou__"
-    #eou_token_id = tokenizer.getToken('__eou__')
     eou_token_id = tokenizer.token_to_id('__eou__')
-    #eou_token_id = eou_token_id[-1]
 
     if torch.cuda.device_count() > 1 :
         if with_memory:
@@ -927,10 +954,10 @@ def generate_response(_model, _query, max_new_tokens=60):
         output_ids = output_ids.tolist()  # Convert tensor to a list
     
     # Remove any occurrences of the "__eou__" token from output_ids
-    output_ids = [token for token in output_ids[0] if token != eou_token_id]  # Process the sequence
+    # output_ids = [token for token in output_ids[0] if token != eou_token_id]  # Process the sequence
     
-    # return decode(output_ids[0].tolist())
-    return decode(output_ids)
+    return output_ids[0], decode(output_ids[0])
+    #return decode(output_ids)
 
 import random
 import string
@@ -1206,21 +1233,18 @@ def chat_loop5(model):
         # Add model response to conversation history for minimal context
         conversation_history.append(f" {model_response} __eou__")
 
-def process_response(user_input, model_response):
-    input_length = len(user_input)
-    response_length = len(model_response)
-
-    # Calculate end position for debugging
-    end_position = response_length - input_length
-    print(f"input length: {input_length}")
-    print(f"response length: {response_length}")
-    print(f"end position: {end_position}")
-
-    # Trim any overlapping input from the response, if needed
-    if model_response.startswith(user_input):
-        model_response = model_response[input_length:].strip()
-
-    print(f"Model: {model_response[end_position:]}")
+def process_response(model_response, bot_token_id):
+    # Locate the __bot__ token and extract response from there
+    bot_start = model_response.find(f"{bot_token_id[0]}")
+    
+    # If __bot__ is found, slice from that position onward
+    if bot_start != -1:
+        model_response = model_response[bot_start + 1:].strip()
+    else:
+        print("Warning: __bot__ token not found, using entire response.")
+    
+    # Print and return the cleaned model response
+    print(f"Model: {model_response}")
     return model_response
 
 
@@ -1241,7 +1265,7 @@ def chat_loop6(model):
             conversation_history.clear()
         else:
             input_length = len(raw_input)
-            _input = f"__user__ {raw_input} __eou__"
+            _input = f"__user__ {raw_input} __eou__ __bot__"
             
             print(f"input length {input_length}")
 
@@ -1284,6 +1308,63 @@ def chat_loop6(model):
 
             #total_len = total_len + response_len + input_length
 
+"""
+TODO
+    Use the undecoded valuse from generate response to find last BOT response.
+"""
+def chat_loop7(model):
+    conversation_history = []  # Keep recent exchanges only
+    max_history_pairs = 1  # Keep only the last exchange for context
+
+    print("Enter your queries. Type '__exit__' to quit, '__new__' for new chat")
+
+    
+    while True:
+        raw_input = input("user: ")
+        
+        if raw_input.lower() == "__exit__":
+            print("Exiting chat.")
+            break
+        elif raw_input.lower() == "__new__":
+            print("New session started.")
+            conversation_history.clear()  # Clear chat history for a new session
+            continue
+
+        # Prepare input with __user__ and __bot__ tokens for context
+        _input = f"__usr__ {raw_input} __eou__ __bot__"
+
+        # Append user input to conversation history
+        conversation_history.append(_input)
+
+        # Limit conversation history to maintain only recent exchanges
+        if len(conversation_history) > max_history_pairs * 2:
+            conversation_history = conversation_history[-max_history_pairs * 2:]
+
+        # Compile limited conversation history for model context
+        conversation_str = " ".join(conversation_history)
+        print(f"Conv Str: {conversation_str}")
+
+        # Generate response from model
+        output_ids, response = generate_response(model, conversation_str, max_new_tokens=256) #.strip()
+        # print(f"Output ids: {output_ids}")
+        # print(f"Response raw: {response}")
+        # Convert output_ids to a list of integers
+        print(f"Raw : {response}")
+        # Check if bot_token_id exists in output_ids_list and find the last occurrence
+        if bot_token_id[0] in output_ids:
+            bot_start = len(output_ids) - 1 - output_ids[::-1].index(bot_token_id[0])
+            print(f"bot: {response[bot_start + 7:]}")
+        else:
+            print("Warning: __bot__ token not found, using entire response.")
+            bot_start = None  # Or handle it accordingly
+            print(f"bot: {response}")
+        # Process the response to remove echoing and extract clean output
+        # model_response = process_response( model_response=response, bot_token_id=bot_token_id)
+
+
+        # Append the cleaned model response to conversation history
+        conversation_history.append(f"{response} __eou__")
+
 
 if for_chat:
-    chat_loop6(model=model)
+    chat_loop7(model=model)
